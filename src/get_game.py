@@ -3,10 +3,10 @@ import zipfile
 import urllib.request
 
 # URL to the ZIP archive containing the Infocom games
-ZIP_URL = "https://archive.org/download/InfocomCollection/Infocom%20Games.zip"
-ZIP_FILENAME = "Infocom_Games.zip"
-TARGET_GAME_FILENAME = "PLUNDERE.z3"
-OUTPUT_FILENAME = "../roms/PLUNDERE.DAT"
+ZIP_URL = "https://archive.org/download/msdos_Plundered_Hearts_1987/Plundered_Hearts_1987.zip"
+ZIP_FILENAME = "roms/Infocom_Games.zip"
+TARGET_GAME_FILENAME = "phearts/PLUNDERE.DAT"
+OUTPUT_FILENAME = "roms/PLUNDERE.z3"
 
 def download_zip(url, filename):
     """Download a ZIP file from the given URL and save it locally."""
