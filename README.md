@@ -1,4 +1,4 @@
-# 💬 *PLLundered Hearts* – Une IA romantique
+# 💬 *PLLuMdered Hearts* – Une IA romantique
 
 **Installation interactive**
 
@@ -6,7 +6,7 @@
 
 ## Résumé
 
-*PLLundered Hearts* est une installation mêlant intelligence artificielle, rétro-informatique et narration interactive. Une IA (type LLM) joue seule à *Plundered Hearts*, un jeu textuel d'Infocom sorti en 1987 et écrit par Amy Briggs, première femme auteure principale chez Infocom.
+*PLLuMdered Hearts* est une installation mêlant intelligence artificielle, rétro-informatique et narration interactive. Une IA (type LLM) joue seule à *Plundered Hearts*, un jeu textuel d'Infocom sorti en 1987 et écrit par Amy Briggs, première femme auteure principale chez Infocom.
 
 À l'écran, l'aventure se déroule en temps réel dans une fenêtre simulant un terminal vintage. En parallèle, une console affiche les pensées de l’IA : elle explique ses choix, hésite, plaisante, cite la créatrice du jeu ou découvre la notion de "romance".
 
