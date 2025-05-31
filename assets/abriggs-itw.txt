@@ -1,0 +1,281 @@
+Oh yeah, that’s an easy question. I was in college and dating a guy who was really ahead of the game — he actually sold computers in the early ’80s. He was a total geek, like most of the people I like. He introduced me to text adventure games. We’d stay up late playing them together.
+
+The first one I played was actually a Scott Adams game — I think it was set in the West, a cowboy-themed game. I can’t remember the exact name, but that was my introduction. From there, I graduated to Infocom games — even before I started working at Infocom.
+
+As for how I ended up there, it was kind of fate. I broke up with that boyfriend — he was moving somewhere else — and in a sort of “so there!” move, I said, “Well, I’m going to move to Massachusetts and work for Infocom.” Completely out of the blue. I was mostly just trying to get under his skin. But it sounded like fun. My sister was living in Massachusetts, so I figured I could crash with her for a while. And hey — Infocom was there.
+
+I arrived in Massachusetts on a Thursday. That weekend, I checked the want ads in the newspaper and saw a job listing for two tester positions at Infocom — one for Cornerstone, and one for the games. I applied, got an interview a week later, and was hired two weeks after that. I basically walked right into it — it all just happened so easily.
+
+I started at Wheeler Street, but they moved during my first month or two, so I got to see both — the end of the old era and the beginning of the new. I was new myself, arriving right at a time when the company was expanding, and all the excitement was around Cornerstone. The whole vibe was, “We’re going to be a business now. We’re going to be buttoned-down, serious. No more of these game things.” And even though I was hired on the games side, I got swept up in that energy.
+
+I was all for the move — the sleek new building with glass walls and atriums. It was exciting. Looking back, I wouldn’t call it a loss of innocence, exactly, but it was definitely a learning moment. I could see, even as it was happening, that mistakes were being made. But I was caught up in the momentum too — believing in the big new idea, only to realize later that it was the wrong direction for Infocom.
+
+Eventually, I ended up becoming an Imp, so I moved much more deeply into the games side after all.
+
+It’s always been a little fuzzy to me how exactly that transition happened — going from tester to Imp. I only have a first-person view of the whole experience; I can’t tell you what it was like from a third-person, company-wide perspective. This was my first job out of college, so I didn’t have a baseline for comparison. I knew it was different — I just didn’t know how different.
+
+I didn’t continue working in the games industry, so I still don’t really know how it compares to how games are made today. From my point of view, I was part of the testers, and then part of the Imps. I don’t really know what it was like to be in marketing, or in another part of the same company.
+
+I can’t really speak to how that experience felt for everyone else. Yes, there would be a call that went out — “We’re going to hire an Imp” — but I don’t know whether that news reached the whole company or just a few of us. That’s part of the thing: I wasn’t omniscient. I only saw my corner of it. I didn’t know what was going on for other people.
+
+Later, I learned that there was this perception that we — the Imps — were a very cliquish group. The cliquish of the cliques. And that the testers were seen as kind of on the margins of that group, with other departments even further out. But to us, at the time, it didn’t really feel that way. At least not from my point of view.
+
+When all that happened — after the layoffs, the Cornerstone disaster, and the purchase of Infocom by Activision — Steve Meretzky came to me. He had been one of the testers before becoming an Imp himself. One Saturday morning, he said to me, “You know, Amy, I remember you once said it was a dream of yours to become an Imp someday.” It had been a vague, blue-sky kind of goal. And he said, “Well, we’re going to be hiring an Imp — and soon. But with all the cutbacks, after this hire, there probably won’t be another one until one of us dies. So if you’re going to go for it, now’s the time.”
+
+So I said, “Okay... what do I do?” And he told me: “Write a game.”
+
+So I did. I wrote a game and applied. I think there were other people applying too, but I got it.
+
+That’s the other side of it: testers and Imps worked very closely together. Being a tester was the perfect springboard to becoming an Imp — you knew the games, you saw how they were made, you were part of the process. It wasn’t some big leap. It was a natural step.
+
+I suppose that when you look at a finished game, it’s hard to imagine all the steps that went into creating it. But as a tester, when you've been there from the start — from the alpha testing stage, where nothing works yet, where there’s no complete story or experience — you get a much clearer sense, even from the outside, of what creating a game is really like. So it feels like a natural next step to try making one yourself.
+
+Steve helped me. He was the one who explained how to work with the interpreter. He gave me the technical rundown — I’m blanking on the exact words — you know, compiling your game, building it, the computer-side steps. I had some programming experience already, so it wasn’t completely foreign to me, but I didn’t know how to do it in ZIL. Steve didn’t hold my hand, but he did lay out what I needed to know and pointed me in the right direction.
+
+From what I experienced inside the company, we were all very young. I was a bit younger than the average — maybe 22 or 23. But the whole team was young. Someone could probably tell you the actual average age — we even had a company T-shirt that went to the oldest person, just for fun. It was that kind of place.
+
+Most of us were single, and we practically lived at Infocom. It wasn’t just a workplace — it was our home and our family too. So when I started writing my game, it just folded into the rhythm of daily life. I’d come in to test around 9:00, 9:30, maybe 10. I’d work until 6:30 or 7, then spend two or three hours working on my own game. Sometimes I’d go out to dinner with someone else who was working late, then come back to the office — the company was always open. And on weekends, I’d be there too, especially once I was fully in the mindset of, “I’m going to do this. I have to do this.”
+
+I was getting up at six in the morning and coming in on Saturdays and Sundays too, just to work on my game. Even on weekends when I wasn’t officially working, it didn’t feel hard — it was just part of the company culture. I wasn’t the only one doing that, and that’s what I mean to say. You’d always see other people around the office — not necessarily writing their own games, but maybe playing games on the computers we had, or just hanging out. Everything was open and communal.
+
+In that sense, I guess it was different from other places I’ve worked since.
+
+As for specifics, I had written a really off-the-wall, bizarre little game as my sample. I have no idea where it came from — it was about being a tester in an “Alice in Wonderland”-style alternate dimension. The bugs you reported were literal bugs, transformed into creatures, and you’d bring them to an Imp who sat around like the caterpillar with a hookah. It was strange and surreal, but it got around a lot of the typical real-world mechanics — like inventory management with rope and such — so there weren’t any red flags. My test game didn’t signal any of the future difficulties I might encounter.
+
+I used to talk with the other guys about things. It was an open atmosphere — at least for some of us. Each Imp decided how much they wanted to share with others. I’d ask for help with puzzle design or problem-solving, but I don’t recall any specific advice. I do know that Steve helped me figure out what my first official game should be, once I’d been hired. We talked about that pretty often.
+
+I remember him telling me he wouldn’t have chosen Plundered Hearts as his first game. He said it sounded too hard for a debut project. But I didn’t take his advice — and obviously, there was mentorship and discussion going on — I just don’t remember the exact details.
+
+As for Dave Lebling and Brian Moriarty... well, by the time Plundered Hearts came out, I left the company about a year later. I had worked on some other projects after that, but we had trouble finding a direction — something that marketing and administration actually wanted me to do. I was really frustrated at the time. We don’t have to get into that unless you want to, but I could have stayed. I could have done other things.
+
+You mentioned other Imps talking about how wonderful it all was, and it was wonderful. For me, the sad truth is that it was the best job I’ve ever had — and probably a job I could never have again. It wasn’t even a “job” in the traditional sense. It was an amazing creative experience with an amazing group of creative people. I really do think it was something special and rare.
+
+But I also came in near the end of the golden era. I know how good it was, because I caught the tail end of it — and I was there for most of the decline, all the way into the dissolution of the company. That was hard. Really hard to go through.
+
+So, yes, I could have written more games, but we just couldn’t find common ground. I left for a mix of personal reasons and because of all that friction.
+
+At one point, they asked me to come up with a game that would have marketing tie-ins. But my personal interests were... well, geeky — not exactly ideal for mass-market branding. In retrospect, I think some of my ideas could have worked.
+
+For example, I had an idea for a vampire game inspired by Anne Rice’s books — this was before the movie came out, before it hit the mainstream. That one, I think, was a missed opportunity. I also had an idea for a game based on a series of historical swashbuckler novels set in the 16th century — not a romance like Plundered Hearts, but more historical and adventurous. I was a bit less invested in that one, since I felt like I’d already explored similar ground.
+
+And then I had an idea for a Doctor Who game — though that was right when Doctor Who was fading in the U.S. Tom Baker’s episodes had stopped airing, and the newer Doctors weren’t generating the same excitement. The show never had massive popularity here, so maybe that one wouldn’t have landed either.
+
+But to be fair, it wasn’t just management saying, “No, you can’t do that.” It was also me — not pushing hard enough, not asserting myself. It was a two-way street.
+
+Okay — as for that part of it, I’ll take both the credit and the blame. That was entirely my idea. I think the company was fine with me moving forward, but it wasn’t something they pushed for. It’s not like there had never been women working on text adventures before — even at Infocom — but they hadn’t been lead Imps.
+
+Still, I think it was a good selling point: “Look, a woman writing a game for women.” At the time, there was a growing interest in so-called “games for girls.” This was before Brenda Laurel, and before Purple Moon — which has since gone out of business — but around that era, companies were starting to think about how to reach girls with games. And what they were coming up with were things like cooking games, sewing games… which was just benighted. The idea that those kinds of games would appeal to girls — and more importantly, that they were actually fun — was flawed from the start. No wonder girls weren’t interested.
+
+Now, I’m not going to claim that Plundered Hearts was the kind of game that girls would necessarily want to play. I think the mode of play — sitting alone at a computer, typing commands — isn’t something that most teenage girls are naturally drawn to, developmentally speaking. Brenda Laurel and others eventually found much better ways of creating games that actually appealed to girls’ interests and ways of interacting.
+
+But back then, we didn’t know any of that. I just thought it would be fun to write a romance — something different, something with a twist. And there was this idea, or maybe a gimmick, of a woman writing a game for women. That was unusual.
+
+At the time, some critics really hated it. Some reviews tore it apart for being “overly feminist.” I remember one reviewer in particular who was furious because she tried to karate chop something — to act tough — and the game wouldn’t let her. She criticized it for not allowing the protagonist to be strong.
+
+And we could go into a whole philosophical discussion about what kind of character you should be able to play in these games. But Plundered Hearts was, in the end, an experiment. An interesting one.
+
+It’s funny — I meant to say earlier, when you asked about Steve giving advice — he may not have needed to give me advice, because I had already absorbed a lot from him. Around the time I was working at Infocom, I read an interview with him — I think it was in Games Magazine — that really struck me. And I still remember it to this day.
+
+He talked about this fine line between realism and narrative design when you're describing game environments. He said something like: if you write, “You walk into an office. There’s a desk,” the player will immediately start imagining a whole world of objects that should be on that desk — a stapler, a phone, a pencil cup — who knows what they’ll expect? And as the implementer, you don’t want to spend your time coding every single conceivable item on a desk, when all you really care about is, say, the one magic pen in the pencil cup.
+
+But if instead you write, “You walk into a wizard’s lab” or “a wizard’s cave,” players have no concrete expectations of what should be there. That gives you freedom. You can get away with a lot more in a fantasy environment, where the player’s assumptions are looser.
+
+That really stuck with me.
+
+And I think that touches on something important — the tester’s role wasn’t just QA in the sense of “where does the computer crash.” It was also about identifying where the world you’ve created breaks down. Where does it stop making sense to the player? What’s a reasonable approximation of a space like a desk, without needing to implement everything under the sun? You try to balance believability with practicality.
+
+In Plundered Hearts, you could argue that I didn’t broaden the interaction enough. Some people complained, for example, that they couldn’t “karate chop” something — and sure, that’s a fair critique. I know for a fact that I’m still embarrassed, even today, that in the final released version, there’s a bug that happens within the first few moves if you do something completely logical.
+
+I can’t remember exactly what the bug was right now, but it was a real one. If you typed something like “take the box” — there’s a box under the bed that slides out — and you used that phrasing instead of “grab the box” or whatever the expected command was, you’d get garbage text in response. And that’s such a logical thing for a player to do. It really should have worked. That was something the testers missed, or maybe I missed — and I’ll take responsibility for that. It was a very obvious thing, and it happened right at the beginning of the game.
+
+As for the technical side — I used a parser that was already written, but I had to strip it way down. I don’t know if anyone’s ever told you this part of my story: since Plundered Hearts was my first game, they gave me nine months to write it. But I actually finished it in six. Then I spent the next three months cutting — just cutting things out. It was way, way too big to fit.
+
+I was the last Infocom game that had to fit on the Commodore 64, so there were serious space constraints. A lot of great content had to go. So I did a lot of trimming.
+
+I started with a “black box” parser, and I don’t think I used any other game as a base. If I did, it might have been Prison — that was our development name for A Mind Forever Voyaging — because in my mind, it was the most similar in terms of tone or structure. But I’m pretty sure I didn’t start from that, because it was so huge. I would have spent all six of my first months just cutting things out to get it down to size.
+
+Some other games were more manageable, but that one — no.
+
+I wasn’t assigned the romance game — not at all. But it was definitely a close call. I think they would have preferred that I not start with a romance game as my debut. It’s not like I forced them into it, but there was a definite sense of, “Hey, let’s try something for women.” The whole “women writing for women” angle — reaching a new market — that was appealing to them.
+
+At the time, after my first six months at Infocom, everything already felt like the beginning of the end. There was this low-level panic running through the company: Where’s the next Hitchhiker’s Guide to the Galaxy? That was the looming question. And that’s what really frustrated me — after Plundered Hearts, the reaction was essentially, “Well, that’s nice... but it didn’t sell very well, dear.” It wasn’t quite that condescending — but it was almost that tone.
+
+And then the message was: Now go write us a hit. Just write another game that’ll sell 150,000 copies. Even though none of the other games had hit that number — except for Hitchhiker’s, which had sold around 400,000. So they were asking for something impossible.
+
+But at the same time, they didn’t want to tell me what to write. They didn’t want to “burden” me with direction — just, you know, go write a blockbuster. It was incredibly frustrating.
+
+Looking back, I probably bit off more than I could chew with Plundered Hearts. I chose a different genre, a different style of play, aimed at a completely new audience. And again — I was the innocent newbie throughout most of the experience. I didn’t know the industry. But from what I was told at the time, even Activision’s sales team didn’t know how to handle Infocom games. They were aimed at a slightly different market, a different kind of player. And the kind of play we were offering was very different from what was becoming mainstream.
+
+At the time, sitting down for 150 hours with a game was just not the same as playing Pong, you know? So I could blame the lack of sales on factors that were far beyond my control. It probably had a lot to do with the game being marketed to the wrong audience — and the people who would have been interested in it weren’t necessarily the kind of people who played computer games. Marketing wasn’t unaware of that, but there wasn’t really a good solution.
+
+To bring it back to your question — no, they didn’t say, “You have to write a romance game.” That wasn’t how it happened. I think they leaned into that narrative after the fact, because it gave them something to talk about when presenting the game. But I don’t even remember what other ideas I might have had for my first game.
+
+In high school, I had actually imagined that I’d grow up to write romance novels. So writing a romance game felt like a logical and personal choice — and something different. But it definitely didn’t come from management.
+
+Looking back, I can say this: when I saw Pirates of the Caribbean — the first movie — I thought, That’s what I was trying to do. That whole experience, that tone and sense of adventure, was what I wanted Plundered Hearts to feel like.
+
+And the other big influence was Wishbringer. I loved the dual-layer design of that game — how you could play it with magic, or without. That kind of structure really stayed with me.
+
+I didn’t include any magic in Plundered Hearts, but what I was trying to do was something a bit like Wishbringer — to make a game you could play two ways. One way, you could experience it purely as an adventure. The other, you could lean into it as a romance. Steve actually pulled that off more successfully in Leather Goddesses of Phobos, I think — with his tongue-in-cheek romance and all the sexy bits. That game let you play it straight, or go for all the sex jokes — and it worked.
+
+Anyway, that was the idea behind Plundered Hearts — giving players some range in how they approached it.
+
+As for how the game was received... well, there wasn’t any immediate sense that it had found its audience. The initial reaction was mostly disappointment. I don’t take that personally. At that point, any game that didn’t sell 150,000 copies was seen as a letdown — not by the Imps, but by marketing and management. Their attitude was, “Oh no, we missed the mark again. Well, go make us a hit next time.”
+
+Given that Plundered Hearts only sold around 30,000 copies — and that the average game at the time was selling closer to 60,000 — it was considered a poor performer. So it really surprised me when, about ten years later, I was in graduate school in Minnesota and a high school or college student knocked on my door and asked, “Are you the Amy Briggs? I played Plundered Hearts in fifth grade — it was my sister’s game, but I played it with her.”
+
+I always joke that the only reason the guys played it was because it was their sister’s game. But still, this person said, “That was a great experience for me. I just wanted to thank you.”
+
+That really caught me off guard. I had expected that, being part of Infocom, I might get the occasional nod or bit of nostalgia. But to hear that my game — which at the time I saw as a kind of failed experiment — had made a difference in someone’s life… that meant a lot. They didn’t say it changed their life or anything dramatic, but they remembered it. And not as “the flop of that year,” which was honestly how I saw it back then.
+
+So yes, that was a real surprise.
+
+If the company had truly wanted the kind of success they had with Hitchhiker’s Guide, they would have needed to work more collaboratively across the board — especially with marketing and creative aligned in the same direction. That’s part of why I was so surprised they didn’t follow up on the vampire idea. I think it was a combination of me not pushing hard enough, and the fact that Anne Rice wasn’t as famous at the time as she is now.
+
+At the time, Anne Rice had only written two — maybe three — of her Vampire Chronicles books. That just wasn’t big enough yet. I did try to push the idea. I even had some ties in the public radio world — I had worked for A Prairie Home Companion as an usher for years, and I knew Garrison Keillor. I’d been to potlucks in his kitchen. I wouldn’t say we were close personal friends, but I knew him well enough that there was some internal pressure: “Hey, maybe see if you can get Garrison Keillor involved.”
+
+Looking back, that actually surprises me — that they were the ones pushing for Garrison. He’s much more famous now than he was in the ’80s, but he was at least a name back then. Anne Rice, by contrast, was still more of a cult figure — this gothic vampire writer with a niche following. So I don’t know why the vampire idea didn’t gain more traction.
+
+Eventually, I was assigned to the long list of people who were supposed to work on The Restaurant at the End of the Universe — the sequel to Hitchhiker’s Guide to the Galaxy. I’m not sure if I was the first person put on that project, but it happened when I didn’t have a clear game of my own in the pipeline. So they said, “Here, write the next big hit — it’s the next Douglas Adams game!”
+
+But it never really came together. It was after Bureaucracy, or maybe around the same time, and was intended as a sequel to Hitchhiker’s. But... it just never materialized.
+
+A lot of Imps' careers effectively ended on that game. When I came onto the project, Douglas Adams was completely unattached — he just didn’t want to push it through. I never met him personally. I was once in the same room with him — literally the day after I was hired — he came by and was introduced to another tester, but I wasn’t working on his game at that point, so I didn’t get to meet him.
+
+He wasn’t involved in the project at all by then. It got passed around from person to person. Eventually, I was told — seriously — that I would be writing the game alongside a programmer at Magnetic Scrolls, which was actually one of our competitors. I was going to be told how to write the game, and my role would be reduced to the old-fashioned meaning of “implementer” — just coding what someone else decided.
+
+At that point, I said: No. This is absurd. I quit the project.
+
+So yes — I quit that project. And not long after, I quit the company as well. It all happened around the same time.
+
+It wasn’t dramatic — not like a big emotional breakdown. It was just... life. The house was messy, the dogs weren’t getting walked, I wasn’t doing well at work, and I just thought, You know what? I’m done. I need to get my life back.
+
+I can’t remember the exact timing, honestly, but it was all in the same general period. I do have some historical perspective, like what happened with Bureaucracy, for instance.
+
+Looking back, I think it was all driven by panic — pure panic. And ironically, I think what made Infocom great when it was great is also what ultimately killed it.
+
+As I understand it, the company was originally founded to be a serious, buttoned-down, three-piece-suit kind of business. The games? Those were just a side hustle. A revenue stream. The idea was: “We’ll make money off the games, then use that to fund the real work.”
+
+And because of that, they ignored the games — creatively and financially — right when the games most needed support. And that’s the exact opposite of what you need when you're working in a creative format. They threw a little bit of money at us, but nowhere near what was needed to thrive — or even to survive — in the evolving games market. Because, in their minds, that wasn’t the point.
+
+All the profits from the games were funneled into the so-called grown-up stuff — the business software, the "serious" endeavors. And in the end, that’s what sank us.
+
+What really made it all work, in the early days, was that the games team was more or less left alone. We were ignored — but in a good way. Pleasantly neglected. And that allowed a group of truly brilliant people — and I don’t include myself in that — to come together and just create. It led to incredible things, and to a genuinely wonderful working environment. It really was a special place.
+
+But then Cornerstone failed, and everything began to unravel. Suddenly, there was this understandable — and very human — reaction: Oh no, now we have to survive on the games. All the hopes and dreams that had been poured into the “grown-up” side of the business now had to be transferred to the game side.
+
+And with that shift came micromanagement — a finger poking into the very space that had thrived because it had been left alone.
+
+And that... that’s what killed it.
+
+So in a way, it was because we were neglected that things were able to become great. And then, once there was an effort to capitalize on that greatness, it all fell apart. I think that’s what killed the spirit — not necessarily the quality of the later games. I wouldn’t say the late games were bad — just that they were trying too hard.
+
+Instead of letting, say, Lebling go off and come up with something great on his own — because he’d proven he could — it became about making sure the next project was a guaranteed hit before it even got out of the gate. And you just can’t work that way, not with creative projects.
+
+At the time, the games industry itself was still very young. I hadn’t planned on entering it — it just kind of happened. For a while, I kept thinking, Maybe I’ll go back someday. But eventually, I realized: it had moved on without me.
+
+Yeah… I retired when I was 26. And I thought, Now I’m going to write. That’s something I’ve done periodically throughout my life — I say, “I’m going to write the Great American Novel.” But actually, at the time, I was just planning to write a novel.
+
+When I left Infocom, they threw a huge party for me. They even gave me a T-shirt — I still have it — that said: 1989 Winner of the Pulitzer Prize. And suddenly, that put a whole weight of expectation on me… which kind of killed the project before it even began.
+
+I’m still interested in writing — I’m still sort of trying to do it — but no, I’ve never written that novel. I keep finding other things to do.
+
+And sometimes I wonder: do I really want to write the novel? Or do I just want to keep dreaming about writing the novel?
+
+Well, there’s something to be said for that. So… let’s see where I should start.
+
+By that point, Wheeler was probably already being packed up. When I first saw it, it was full of boxes — a dark little space, already halfway in transition.
+
+So maybe I’ll start talking about Imp life — though I could also talk about the testers. The building we moved to is still there today, I believe. It’s a six-story structure, and we were on the fifth floor. At the time, it felt very modern — all glass on the outside, with beautiful glass atriums that ran from bottom to top in the center. Very sleek. Very buttoned-down.
+
+You’d arrive… well, I’d arrive whenever I felt like getting up. I was living all over Boston back then, but always somewhere along the T line, so it was an easy trip — just a short walk, about three blocks from the station to Cambridge Park.
+
+You’d go up the elevator, surrounded by serious business types in button-down shirts. Then you’d step into our space. We had a formal reception area, everything looked neat and light... and, well, a bit colorless. Not “light” in a good way — just... colorless. Gray carpet, white walls, no warmth. Wheeler, even when I knew it — dark and full of boxes — still had this sense of artisanship. I don’t know if it was actually just a rundown space, but that’s how it felt: handmade, a little gritty, but alive.
+
+Cambridge Park had none of that. We occupied about half a floor, wrapped around one of the central atriums. When we first moved in, the plan was to eventually take over the entire floor. I have some vague memory that we may have even rented the whole thing for a while. But then came the cutbacks, and some of that space was let go. In practice, it felt mostly empty.
+
+You’d walk into a formal reception area — that was where marketing sat. Beyond that, the space was loosely divided: if you went right, you’d reach the Imps; left would take you to the testing area. Go further left and around the curve of the building, and you’d find the interpreter team — Tim Anderson and the other “real programmers,” as I thought of them. (I misspoke earlier — it wasn’t the parser they were working on, it was the interpreters.)
+
+Then, further down the hall, tucked away in a corner, were the execs — administration, the “big guys.”
+
+The Imps’ area has probably been described before, but... We had what we called the bowling alley — a very large open room at the end of the hallway, with windows all along the wall. It was on the corner of the building, so it got a lot of light. All of the Imps with offices on the north side had windows — John Palace had the corner office — and then the bowling alley itself had a wide stretch of windows looking out.
+
+On the south side, there was another line of offices. Steve Meretzky had the one with the window — the coveted south-side window office — and the rest of us had enclosed, windowless offices along that wall.
+
+We used to joke about the North Side kids and the South Side kids. The North Side was where the “real programmers” sat — the hardcore coders. The South Side? That was where the dabblers were — the ones who had the creative spark but were still struggling with the technical side of things.
+
+That was the myth, anyway — the whole North Side versus South Side thing. Because of course, Steve was on the South Side, and while he wasn’t considered one of the “real programmers” and didn’t have a computer science degree, he absolutely deserved to be on the North Side. I think, in some ways, he actually enjoyed being on the South Side.
+
+The South Side was me, Jeff O’Neill, and Hollywood — although technically, Hollywood wasn’t on the South Side; he had a windowless office on the East Side. I think the original idea was that once we were up and running, and famous — assuming we were even still making games — they’d fill the center of that big open area with cubicles, and the place would be bursting with creativity and new titles coming out of every corner.
+
+I don’t remember ever feeling rushed. And I’m not a morning person, so I know it wasn’t an early-start kind of place. The doors were usually open — unless someone didn’t want to be bothered, which was rare. It was actually a wonderful way to work.
+
+All of us Imps were working on separate projects, but in a shared space. And for me, it was kind of the perfect environment: there was a sense of camaraderie, of being on the same team — all pulling in the same direction — but I didn’t have to actually collaborate directly or share my creative process. I could do my own thing, but never feel isolated. Some people work well with partners — I don’t. But at Infocom, I had the support of a team without anyone interfering in my individual process. You’d say hello in the morning, sit down, and just start working. On a good day, I’d get so absorbed that I’d completely lose track of time — six hours would pass, and I’d suddenly realize I’d forgotten to eat lunch.
+
+We worked on old-fashioned amber monitors plugged into a mainframe. It’s hard to even remember how basic it all was. At the time, it felt cutting-edge — but now, of course, it’s nothing compared to even the cheapest computer you can buy today.
+
+The formal workday usually ended around the same time for everyone, and was often capped off with a game of Boggle. Not a party — just a group game. For years, I wished someone would make a proper intranet version of Boggle — probably possible now, but back then it wasn’t.
+
+So whoever signed up — usually Imps and testers — would play a quick round of Boggle for half an hour or so. Then people would go home. Those with families would head out for the evening; the rest of us would often stay and keep working late.
+
+By the way, Steve was by far the best Boggle player. I always thought I was terrible at it because he would beat the pants off me — and everyone else — every time. Partly because he’s the fastest typist I’ve ever known. You’d barely have a word formed in your head, and he’d already be typing it.
+
+The funny thing is, I’ve since discovered that I’ve never been beaten at Boggle since leaving Infocom. So I guess I’m actually pretty good — but back then, Steve was supreme. He was just in a league of his own.
+
+Once a week, we had what we called an Imps’ Lunch — a formal-ish meeting where we’d all sit down together to share updates on our games, bring up problems, and ask for help. It was a space to check in with each other, and to stay connected even though we were each working on separate projects.
+
+Sometimes outside collaborators would join us — Tom Snyder Productions came to a few, and others like Bob Bates, who was sort of working with us but not yet fully part of the team, would show up as well. These lunches were semi-formal. Structured, but still very much in the Infocom spirit.
+
+Bruce — I can’t remember his full name — the head of Activision, the lawyer-CEO guy… yeah, he came to one of those lunches once. That was a tense lunch.
+
+And yes, I was the girl — and I was the one who usually ran out to get the food. John and I would share that duty. But I don’t actually think it was because I was a woman. I got paid less than anyone else, sure — but I don’t think that was because I was a woman either. I think it was because I was the last one hired. Before I even started, I was told, “You know, we’re paying the other guys a lot more than you — but we just don’t have the money right now.” And maybe, if I hadn’t been a woman, they wouldn’t have made that kind of cut. I don’t know. I don’t hold it against anyone — whoever they might be — but it was a fact: I was the one who’d go get the lunches. I was the one who often picked up the party supplies for Friday gatherings.
+
+But I also kind of liked doing that. I’d volunteer. It wasn’t something I resented — it felt like being part of the group in a way that mattered.
+
+And during the Imps’ lunches, I’d do that too. I liked helping out.
+
+It was, you know... a very supportive atmosphere.
+
+I’m sure there must have been conflicts between Imps — I know there were — but I don’t remember anything like that happening during our lunches. Those were always collegial. Supportive. More like, “Hey, I’ve got this puzzle and it’s not working — it’s boring — how do I fix it?” That sort of thing.
+
+We didn’t really discuss coding problems at lunch — a lunch table isn’t exactly the ideal place for that kind of deep problem-solving. If you had a technical issue, you’d go talk to someone directly. For me, Stu Galley was usually the go-to person for anything parser-related. If it was something more complex on the programming side, I’d check in with Lebling. And if it was about humor — how to make something funny, or how to get out of a narrative pickle — I’d ask Steve.
+
+The Imp lunches were more of a free-for-all — people tossing out ideas, suggestions, encouragement. Everyone was working on their own thing, but we were doing it together. And that... that worked really well.
+
+Of course, a couple of people were remote — but that’s just how those things go. And in the end, it wasn’t just about the games themselves — it was about everything around them: the cover art, the marketing, the interviews, the packaging.
+
+When I was there, that packaging evolved — from those wonderfully unique boxes filled with feelies and physical surprises, to something that looked more like a matching set of books. And honestly, that fit. That was the perception, even internally.
+
+We really did believe — maybe arrogantly — that we were the best. And maybe that was arrogant… but maybe it was true. I don’t know. What I do know is that we’ve been remembered well. People still talk about Infocom with real admiration.
+
+Because we weren’t just making games. We were creating experiences — environments. To us, the games were more like books. That’s how we saw them.
+
+And I don’t know if we ever fully understood that at the time… but I think maybe, deep down, we wanted others to understand that. To see what we were really trying to do.
+
+I'm not sure I can even say what Infocom means to me now — but it was something rare.
+
+The theme song playing in the back of my head is Camelot. Camelot! — though I can’t quite sing it right now. But that’s what it felt like: a moment of glory. And I’m not saying something like that couldn’t happen again.
+
+I see the games coming out now — though I don’t follow them too closely, I’m not a big gamer — but… I don’t know. I think what made Infocom so great was the ability to express an individual vision. In a text adventure, you’re essentially writing a book. Actually, I’ll go further: it is a book — just done a little differently.
+
+It gives you access to a singular authorial voice in a way that’s very different from modern games, where you need a whole team — voice actors, celebrities like Mark Hamill, massive art departments, combat algorithms. And sure, that creates spectacle, but it loses something too.
+
+It doesn’t surprise me that many commercial games today feel more and more like hollow Hollywood blockbusters. Because that’s what it takes to make something that looks like that — a machine behind it.
+
+What does surprise me — and amaze me — is the world of amateur, underground games. Maybe they’re not so “underground” to the people making or playing them, but from where I sit, they feel like something deeply alive.
+
+And I guess my instinctive response is: Why would I want to play anything else?
+
+It’s an unlearned response — I want to be clear about that. This isn’t some educated take. It’s just that… I find myself asking, Why would I want to commit 100 hours to some unknown person’s game? I want a kind of stamp — a signal that someone put real money behind it. That I’m paying for it because it’s been proven to be worthwhile.
+
+But honestly, those lesser-known games are probably just as engaging as any book written today. And for someone like me — with the interests I have — probably more engaging than Halo.
+
+It’s not exactly fair to compare Halo to Plundered Hearts, of course. But still. I don’t think I have anything new to say here that hasn’t already been said, or isn’t widely known.
+
+There is a lot less blood and shooting in Plundered Hearts than in Halo. Though... there are actually a lot of deaths in Plundered Hearts. That was entirely intentional. It was supposed to be accessible — written for a new market of players who maybe hadn’t played interactive fiction before.
+
+And I didn’t have a good way to scale puzzle difficulty — no advanced hint system or adaptive puzzles. So instead, I just let you die. Over and over. It was a way to make things feel easier — no complex workaround, just: “Oops, that was the wrong move. Try again.”
+
+Also, I was extremely limited on space. I didn’t have room for things like “landing zones” — those transitional rooms you’d fall into if you made a mistake, where you'd have to solve something to get back. It was simply easier — from a memory and design perspective — to have the game say: “You step off the cliff. You die.”
+
+So yes — I suppose that’s a very specific point about Plundered Hearts.
