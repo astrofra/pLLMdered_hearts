@@ -12,7 +12,7 @@ I was all for the move — the sleek new building with glass walls and atriums. 
 
 Eventually, I ended up becoming an Imp, so I moved much more deeply into the games side after all.
 
-It’s always been a little fuzzy to me how exactly that transition happened — going from tester to Imp. I only have a first-person view of the whole experience; I can’t tell you what it was like from a third-person, company-wide perspective. This was my first job out of college, so I didn’t have a baseline for comparison. I knew it was different — I just didn’t know how different.
+Going from tester to Imp, I only have a first-person view of the whole experience; I can’t tell what it was like from a third-person, company-wide perspective. This was my first job out of college, so I didn’t have a baseline for comparison. I knew it was different — I just didn’t know how different.
 
 I didn’t continue working in the games industry, so I still don’t really know how it compares to how games are made today. From my point of view, I was part of the testers, and then part of the Imps. I don’t really know what it was like to be in marketing, or in another part of the same company.
 
@@ -56,9 +56,7 @@ So, yes, I could have written more games, but we just couldn’t find common gro
 
 At one point, they asked me to come up with a game that would have marketing tie-ins. But my personal interests were... well, geeky — not exactly ideal for mass-market branding. In retrospect, I think some of my ideas could have worked.
 
-For example, I had an idea for a vampire game inspired by Anne Rice’s books — this was before the movie came out, before it hit the mainstream. That one, I think, was a missed opportunity. I also had an idea for a game based on a series of historical swashbuckler novels set in the 16th century — not a romance like Plundered Hearts, but more historical and adventurous. I was a bit less invested in that one, since I felt like I’d already explored similar ground.
-
-And then I had an idea for a Doctor Who game — though that was right when Doctor Who was fading in the U.S. Tom Baker’s episodes had stopped airing, and the newer Doctors weren’t generating the same excitement. The show never had massive popularity here, so maybe that one wouldn’t have landed either.
+For example, I had an idea for a vampire game inspired by Anne Rice’s books — this was before the movie came out, before it hit the mainstream. That one, I think, was a missed opportunity. I also had an idea for a game based on a series of historical swashbuckler novels set in the 16th century — not a romance like Plundered Hearts, but more historical and adventurous. I was a bit less invested in that one, since I felt like I’d already explored similar ground. And then I had an idea for a Doctor Who game — though that was right when Doctor Who was fading in the U.S. Tom Baker’s episodes had stopped airing, and the newer Doctors weren’t generating the same excitement. The show never had massive popularity here, so maybe that one wouldn’t have landed either.
 
 But to be fair, it wasn’t just management saying, “No, you can’t do that.” It was also me — not pushing hard enough, not asserting myself. It was a two-way street.
 
@@ -70,23 +68,15 @@ Now, I’m not going to claim that Plundered Hearts was the kind of game that gi
 
 But back then, we didn’t know any of that. I just thought it would be fun to write a romance — something different, something with a twist. And there was this idea, or maybe a gimmick, of a woman writing a game for women. That was unusual.
 
-At the time, some critics really hated it. Some reviews tore it apart for being “overly feminist.” I remember one reviewer in particular who was furious because she tried to karate chop something — to act tough — and the game wouldn’t let her. She criticized it for not allowing the protagonist to be strong.
+At the time, some critics really hated it. Some reviews tore it apart for being “overly feminist”. I remember one reviewer in particular who was furious because she tried to karate chop something — to act tough — and the game wouldn’t let her. She criticized it for not allowing the protagonist to be strong, and we could go into a whole philosophical discussion about what kind of character you should be able to play in these games. But Plundered Hearts was, in the end, an experiment. An interesting one.
 
-And we could go into a whole philosophical discussion about what kind of character you should be able to play in these games. But Plundered Hearts was, in the end, an experiment. An interesting one.
-
-It’s funny — I meant to say earlier, when you asked about Steve giving advice — he may not have needed to give me advice, because I had already absorbed a lot from him. Around the time I was working at Infocom, I read an interview with him — I think it was in Games Magazine — that really struck me. And I still remember it to this day.
-
-He talked about this fine line between realism and narrative design when you're describing game environments. He said something like: if you write, “You walk into an office. There’s a desk,” the player will immediately start imagining a whole world of objects that should be on that desk — a stapler, a phone, a pencil cup — who knows what they’ll expect? And as the implementer, you don’t want to spend your time coding every single conceivable item on a desk, when all you really care about is, say, the one magic pen in the pencil cup.
-
-But if instead you write, “You walk into a wizard’s lab” or “a wizard’s cave,” players have no concrete expectations of what should be there. That gives you freedom. You can get away with a lot more in a fantasy environment, where the player’s assumptions are looser.
+It’s funny — I meant to say earlier, when you asked about Steve giving advice — he may not have needed to give me advice, because I had already absorbed a lot from him. Around the time I was working at Infocom, I read an interview with him — I think it was in Games Magazine — that really struck me. And I still remember it to this day: He talked about this fine line between realism and narrative design when you're describing game environments. He said something like: if you write, “You walk into an office. There’s a desk,” the player will immediately start imagining a whole world of objects that should be on that desk — a stapler, a phone, a pencil cup — who knows what they’ll expect? And as the implementer, you don’t want to spend your time coding every single conceivable item on a desk, when all you really care about is, say, the one magic pen in the pencil cup. But if instead you write, “You walk into a wizard’s lab” or “a wizard’s cave,” players have no concrete expectations of what should be there. That gives you freedom. You can get away with a lot more in a fantasy environment, where the player’s assumptions are looser. 
 
 That really stuck with me.
 
 And I think that touches on something important — the tester’s role wasn’t just QA in the sense of “where does the computer crash.” It was also about identifying where the world you’ve created breaks down. Where does it stop making sense to the player? What’s a reasonable approximation of a space like a desk, without needing to implement everything under the sun? You try to balance believability with practicality.
 
-In Plundered Hearts, you could argue that I didn’t broaden the interaction enough. Some people complained, for example, that they couldn’t “karate chop” something — and sure, that’s a fair critique. I know for a fact that I’m still embarrassed, even today, that in the final released version, there’s a bug that happens within the first few moves if you do something completely logical.
-
-I can’t remember exactly what the bug was right now, but it was a real one. If you typed something like “take the box” — there’s a box under the bed that slides out — and you used that phrasing instead of “grab the box” or whatever the expected command was, you’d get garbage text in response. And that’s such a logical thing for a player to do. It really should have worked. That was something the testers missed, or maybe I missed — and I’ll take responsibility for that. It was a very obvious thing, and it happened right at the beginning of the game.
+In Plundered Hearts, you could argue that I didn’t broaden the interaction enough. Some people complained, for example, that they couldn’t “karate chop” something — and sure, that’s a fair critique. I know for a fact that I’m still embarrassed, even today, that in the final released version, there’s a bug that happens within the first few moves if you do something completely logical. I can’t remember exactly what the bug was right now, but it was a real one. If you typed something like “take the box” — there’s a box under the bed that slides out — and you used that phrasing instead of “grab the box” or whatever the expected command was, you’d get garbage text in response. And that’s such a logical thing for a player to do. It really should have worked. That was something the testers missed, or maybe I missed — and I’ll take responsibility for that. It was a very obvious thing, and it happened right at the beginning of the game.
 
 As for the technical side — I used a parser that was already written, but I had to strip it way down. I don’t know if anyone’s ever told you this part of my story: since Plundered Hearts was my first game, they gave me nine months to write it. But I actually finished it in six. Then I spent the next three months cutting — just cutting things out. It was way, way too big to fit.
 
@@ -162,9 +152,7 @@ All the profits from the games were funneled into the so-called grown-up stuff �
 
 What really made it all work, in the early days, was that the games team was more or less left alone. We were ignored — but in a good way. Pleasantly neglected. And that allowed a group of truly brilliant people — and I don’t include myself in that — to come together and just create. It led to incredible things, and to a genuinely wonderful working environment. It really was a special place.
 
-But then Cornerstone failed, and everything began to unravel. Suddenly, there was this understandable — and very human — reaction: Oh no, now we have to survive on the games. All the hopes and dreams that had been poured into the “grown-up” side of the business now had to be transferred to the game side.
-
-And with that shift came micromanagement — a finger poking into the very space that had thrived because it had been left alone.
+But then Cornerstone failed, and everything began to unravel. Suddenly, there was this understandable — and very human — reaction: Oh no, now we have to survive on the games. All the hopes and dreams that had been poured into the “grown-up” side of the business now had to be transferred to the game side. And with that shift came micromanagement — a finger poking into the very space that had thrived because it had been left alone.
 
 And that... that’s what killed it.
 
@@ -186,7 +174,7 @@ Well, there’s something to be said for that. So… let’s see where I should 
 
 By that point, Wheeler was probably already being packed up. When I first saw it, it was full of boxes — a dark little space, already halfway in transition.
 
-So maybe I’ll start talking about Imp life — though I could also talk about the testers. The building we moved to is still there today, I believe. It’s a six-story structure, and we were on the fifth floor. At the time, it felt very modern — all glass on the outside, with beautiful glass atriums that ran from bottom to top in the center. Very sleek. Very buttoned-down.
+Maybe I’ll start talking about Imp life — though I could also talk about the testers. The building we moved to is still there today, I believe. It’s a six-story structure, and we were on the fifth floor. At the time, it felt very modern — all glass on the outside, with beautiful glass atriums that ran from bottom to top in the center. Very sleek. Very buttoned-down.
 
 You’d arrive… well, I’d arrive whenever I felt like getting up. I was living all over Boston back then, but always somewhere along the T line, so it was an easy trip — just a short walk, about three blocks from the station to Cambridge Park.
 
@@ -256,9 +244,7 @@ I'm not sure I can even say what Infocom means to me now — but it was somethin
 
 The theme song playing in the back of my head is Camelot. Camelot! — though I can’t quite sing it right now. But that’s what it felt like: a moment of glory. And I’m not saying something like that couldn’t happen again.
 
-I see the games coming out now — though I don’t follow them too closely, I’m not a big gamer — but… I don’t know. I think what made Infocom so great was the ability to express an individual vision. In a text adventure, you’re essentially writing a book. Actually, I’ll go further: it is a book — just done a little differently.
-
-It gives you access to a singular authorial voice in a way that’s very different from modern games, where you need a whole team — voice actors, celebrities like Mark Hamill, massive art departments, combat algorithms. And sure, that creates spectacle, but it loses something too.
+I see the games coming out now — though I don’t follow them too closely, I’m not a big gamer — but… I don’t know. I think what made Infocom so great was the ability to express an individual vision. In a text adventure, you’re essentially writing a book. Actually, I’ll go further: it is a book — just done a little differently. It gives you access to a singular authorial voice in a way that’s very different from modern games, where you need a whole team — voice actors, celebrities like Mark Hamill, massive art departments, combat algorithms. And sure, that creates spectacle, but it loses something too.
 
 It doesn’t surprise me that many commercial games today feel more and more like hollow Hollywood blockbusters. Because that’s what it takes to make something that looks like that — a machine behind it.
 
