@@ -1,6 +1,6 @@
-# 💬 *PLLuMdered Hearts* – Une IA romantique
+# 💬 *PLLuMdered Hearts* - Une IA romantique
 
-**Installation interactive**
+**Installation interactive (ou pas)**
 
 ---
 
