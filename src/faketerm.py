@@ -187,17 +187,15 @@ prev_cmd = None
 # automated walkthrough
 while True : # for step, cmd in enumerate(plundered_hearts_commands):
     try:
-        # print(f"\n→ Étape {step+1}: {cmd}")
-        # print(f"{cmd}")
         prompt = "You are playing Pludered Hearts, a text interactive fiction by Amy Briggs."
         prompt = prompt + "Here is what Wikipedia says about this game : "
         prompt = prompt + plundered_hearts_wiki
         # prompt = prompt + "Here is the known solution for the game but please don't jump to the end directly : "
         # prompt = prompt + plundered_hearts_solution
-        prompt = prompt + "Here is the latest output from the game (don't repeat it twice in a row): "
+        prompt = prompt + "Here is the latest output from the game : "
         prompt = prompt + prev_output
         if prev_cmd is not None:
-            prompt = prompt + "You previous command was : " + prev_cmd
+            prompt = prompt + "Your previous command was : '" + prev_cmd + "' (don't repeat it twice in a row)."
         prompt = prompt + "Please provide a JSON with two keys : 'comment' key to explain your decision, 'prompt' key that will only contain the command you suggest."
 
         json_command = None
@@ -213,7 +211,7 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
             json_command = extract_and_parse_json(response.message.content)
 
         # print("\n")
-        print("AI thinks : '" + json_command["comment"] + "'\n")
+        print("<AI thinks : '" + json_command["comment"] + "'>\n")
         command = json_command["prompt"]
         command = command.replace(">", "").strip().upper()
         child.sendline(" " + command)
