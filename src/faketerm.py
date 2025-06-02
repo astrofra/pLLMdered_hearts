@@ -27,27 +27,44 @@ def extract_and_parse_json(text):
         # print("No JSON block found.")
         return None
 
-ansi_escape = re.compile(r'''
-    \x1b    # ESC
-    \[      # CSI
-    [0-9;]* # Parameters
-    [A-Za-z] # Command letter
-''', re.VERBOSE)
+import re
 
+# Match ANSI escape sequences like ESC[31m or ESC[2J
+ansi_escape = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
+# Match cursor position commands like [24d (often without ESC, incomplete sequences)
 cursor_directives = re.compile(r'\[\d{1,3}d')
+# Match charset switch like ESC(A or ESC(B
 charset_switch = re.compile(r'\x1b\([A-B]')
 
+# Escape sequences that usually correspond to "clear screen", "move cursor", etc.
+line_breaking_escapes = re.compile(r'\x1b\[[0-9;]*([HJfABCD])')
+
 def clean_output(text):
-    # Cleanup ANSI (line feed, cursor, etc.)
-    text = ansi_escape.sub('', text)
-    # Cleanup "[24d" and alike
+    # Replace certain ANSI codes with newlines (those likely to imply line moves)
+    def replace_with_newline(match):
+        command = match.group(1)
+        if command in ['H', 'f', 'A', 'B', 'C', 'D']:
+            return '\n'
+        return ''
+
+    text = line_breaking_escapes.sub(replace_with_newline, text)
+    # Remove charset switch sequences
     text = charset_switch.sub('', text)
+    # Remove cursor directives like [24d
     text = cursor_directives.sub('', text)
-    # Cleanup score (attempt to...)
+    # Remove remaining ANSI escape codes
+    text = ansi_escape.sub('', text)
+
+    # Remove lines containing only a number (like score or parser noise)
     lines = text.strip().splitlines()
     lines = [line for line in lines if not line.strip().isdigit()]
-    return '\n'.join(lines).strip()
-
+    # Remove repeated empty lines
+    clean_lines = []
+    for i, line in enumerate(lines):
+        if line.strip() == '' and (i == 0 or lines[i - 1].strip() == ''):
+            continue
+        clean_lines.append(line)
+    return '\n'.join(clean_lines).strip()
 
 # official Amiga solution
 plundered_hearts_commands = [
@@ -185,23 +202,39 @@ prev_output = ""
 prev_cmd = None
 
 # automated walkthrough
-while True : # for step, cmd in enumerate(plundered_hearts_commands):
+# while True : # for step, cmd in enumerate(plundered_hearts_commands):
+for step, cmd in enumerate(plundered_hearts_commands):
     try:
         prompt = "You are playing Pludered Hearts, a text interactive fiction by Amy Briggs."
         prompt = prompt + "Here is what Wikipedia says about this game : "
         prompt = prompt + plundered_hearts_wiki
+        prompt = prompt + """
+You are an intelligent assistant who suggests the next action to take in the game.
+
+Important: You are playing a classic text adventure with a strict command parser. Your commands must follow one of these patterns:
+
+- VERB (e.g. LOOK AROUND, INVENTORY, NORTH, N, S, W, E)
+- VERB + OBJECT (e.g. EXAMINE BED, TAKE PISTOL, OPEN DOOR)
+- VERB + OBJECT + COMPLEMENT (e.g. UNLOCK DOOR WITH KEY, FIRE PISTOL AT CRULLEY)
+- Optionally: two simple actions joined by AND or THEN (e.g. TAKE HORN AND BLOW IT)
+
+You may use prepositions to indicate precisely what you want to do: 'LOOK AT the object', 'LOOK INSIDE it', 'LOOK UNDER it'
+Avoid all questions, complex grammar, adverbs, or unknown words. Use only commands likely to be understood by a 1980s parser. Never include full sentences in the 'prompt' field — only one valid command.
+"""
         # prompt = prompt + "Here is the known solution for the game but please don't jump to the end directly : "
         # prompt = prompt + plundered_hearts_solution
         prompt = prompt + "Here is the latest output from the game : "
         prompt = prompt + prev_output
         if prev_cmd is not None:
-            prompt = prompt + "Your previous command was : '" + prev_cmd + "' (don't repeat it twice in a row)."
-        prompt = prompt + "Please provide a JSON with two keys : 'comment' key to explain your decision, 'prompt' key that will only contain the command you suggest."
+            prompt = prompt + "Your previous command was : '" + prev_cmd + "'."
+        prompt = prompt + "From the known solution of the game, you know the next good command will be : " + cmd
+        prompt = prompt + "Please provide a JSON with two keys : 'comment' key to explain (IN FRENCH) why this is the best thing to do in this context, 'prompt' key that will only contain the command you suggest."
 
         json_command = None
         while json_command is None:
             response = ollama.chat(
                 model='llama3:8b',
+                # model = 'deepseek-r1:7b',
                 messages=[{
                     'role': 'user',
                     'content': prompt
@@ -212,8 +245,9 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
 
         # print("\n")
         print("<AI thinks : '" + json_command["comment"] + "'>\n")
-        command = json_command["prompt"]
-        command = command.replace(">", "").strip().upper()
+        # command = json_command["prompt"]
+        # command = command.replace(">", "").strip().upper()
+        command = cmd
         child.sendline(" " + command)
         prev_output = ""
         prev_cmd = command
@@ -227,7 +261,7 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
             if i != 0:
                 break
 
-        time.sleep(0.3)  # artificially wait to allow reading
+        # time.sleep(0.3)  # artificially wait to allow reading
 
     except pexpect.EOF:
         print("Game ended.")
