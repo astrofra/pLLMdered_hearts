@@ -270,11 +270,8 @@ time.sleep(0.5)
 # print(repr(child.before))
 buffer = ""
 for _ in range(50):  # max itérations (sécurité)
-    try:
-        buffer += child.read_nonblocking(size=1024, timeout=0.2)
-        if ">" in buffer[-10:]:
-            break
-    except pexpect.exceptions.TIMEOUT:
+    buffer += child.read_nonblocking(size=1024, timeout=0.2)
+    if ">" in buffer[-10:]:
         break
 # print(child.before)
 print("\n")
