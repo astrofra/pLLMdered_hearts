@@ -1,8 +1,17 @@
+import os
+os.environ["OLLAMA_NO_CUDA"] = "1"
+
 import ollama
 import pexpect
 import time
 import re
 import json
+
+def estimate_reading_time(text, wps=4.0, min_delay=0.3, max_delay=5.0):
+    """Estimate a human-readable delay (in seconds) based on word count."""
+    word_count = len(text.strip().split())
+    delay = word_count / wps
+    return max(min_delay, min(delay, max_delay))  # Clamp delay
 
 def extract_and_parse_json(text):
     """
@@ -21,10 +30,10 @@ def extract_and_parse_json(text):
             json_str = match.group(1)
             return json.loads(json_str)
         except json.JSONDecodeError as e:
-            # print("JSON parsing failed:", e)
+            print("JSON parsing failed:", e)
             return None
     else:
-        # print("No JSON block found.")
+        print("No JSON block found.")
         return None
 
 import re
@@ -181,8 +190,57 @@ The Plundered Hearts package included an elegant velvet reticule (pouch) contain
 Game reviewers complimented Plundered Hearts for its gripping prose, challenging predicaments, and scenes of derring-do. Other publications said it was a good introduction to interactive fiction, with writing suitable for both men and women. Some noted that the genre might have alienated Infocom's typical audience, but praised its bold direction nonetheless.
 """
 
+plundered_hearts_user_manual = """Communicating with Infocom's Interactive Fiction
+In Plundered Hearts, you type your commands in plain English each time you see the prompt (>). Plundered
+Hearts usually acts as if your commands begin with "I want to...," although you shouldn't actually type those
+words. You can use words like THE if you want, and you can use capital letters if you want; Plundered Hearts
+doesn't care either way.
+When you have finished typing a command, press the RETURN (or ENTER) key. Plundered Hearts will then
+respond, telling you whether your request is possible at this point in the story, and what happened as a result.
+Plundered Hearts recognizes your words by their first six letters, and all subsequent letters are ignored.
+Therefore, CANDLE, CANDLEs, and CANDLEstick would all be treated as the same word by Plundered Hearts.
+To move around, just type the direction you want to go. Directions can be abbreviated: NORTH to N, SOUTH to
+S, EAST to E, WEST to W, NORTHEAST to NE, NORTHWEST to NW, SOUTHEAST to SE, SOUTHWEST to
+SW, UP to U, and DOWN to D. Remember that IN and OUT will also work in certain places. Aboard a ship, you
+can use the directions FORE (or F), AFT, PORT (or P), and STARBOARD (or SB).
+Plundered Hearts understands many different kinds of sentences. Here are several examples. (Note some of these
+do not actually appear in Plundered Hearts.)
+>WALK NORTH
+>DOWN
+>NE
+>GO AFT
+>TAKE THE RED CANDLE
+>READ THE SIGN
+>LOOK UNDER THE BED
+>OPEN THE HATCH
+>DANCE WITH WILLIAM
+>CLIMB THE LADDER
+>PRESS THE GREEN BUTTON
+>EXAMINE THE RAPIER
+>SWING ON THE ROPE
+>PUT ON THE PETTICOAT
+>WEAR THE TIARA
+>KNOCK ON THE DOOR
+>SHOOT THE PEBBLE WITH THE SLINGSHOT
+>UNLOCK THE BOX WITH THE KEY
+>CUT THE ROPE WITH THE SCISSORS
+>PUT THE COLLAR ON THE DOG
+>THROW THE GOBLET OUT THE WINDOW
+You can use multiple objects with certain verbs if you separate them by the word AND or by a comma. Some
+examples:
+>TAKE BOOK AND KNIFE
+>DROP THE HOOPS, THE BRACELET AND THE TRAY
+>PUT THE PEARL AND THE SHELL IN THE BOX
+You can include several sentences on one input line if you separate them by the word THEN or by a period.
+(Note that each sentence will still count as a turn.) You don't need a period at the end of the input line. For example,
+you could type all of the following at once, before pressing the RETURN (or ENTER) key:
+>READ THE SIGN. GO NORTH THEN DROP THE STONE AND MAP"""
+
 # run frotz through a terminal emulator, using the ascii mode
-child = pexpect.spawn("frotz -p roms/PLUNDERE.z3", encoding='utf-8', timeout=5)
+# child = pexpect.spawn("frotz -p roms/PLUNDERE.z3", encoding='utf-8', timeout=5)
+from pexpect.popen_spawn import PopenSpawn
+child = PopenSpawn("frotz -p roms/PLUNDERE.z3", encoding='utf-8', timeout=5)
+
 
 # Catch the intro message
 child.expect("Press RETURN or ENTER to begin")
@@ -194,44 +252,56 @@ child.sendline("")
 time.sleep(0.5)
 
 # Initial output
-child.expect("\r\x1b", timeout=5)
-print(child.before)
+# child.expect("\r\x1b", timeout=5)
+# print(repr(child.before))
+buffer = ""
+for _ in range(50):  # max itérations (sécurité)
+    try:
+        buffer += child.read_nonblocking(size=1024, timeout=0.2)
+        if ">" in buffer[-10:]:
+            break
+    except pexpect.exceptions.TIMEOUT:
+        break
+# print(child.before)
 print("\n")
 
 prev_output = ""
+cmd_index = 0
 prev_cmd = None
 
 # automated walkthrough
-# while True : # for step, cmd in enumerate(plundered_hearts_commands):
-for step, cmd in enumerate(plundered_hearts_commands):
+while True : # for step, cmd in enumerate(plundered_hearts_commands):
+    cmd = plundered_hearts_commands[cmd_index]
+# for step, cmd in enumerate(plundered_hearts_commands):
     try:
         prompt = "You are playing Pludered Hearts, a text interactive fiction by Amy Briggs."
         prompt = prompt + "Here is what Wikipedia says about this game : "
         prompt = prompt + plundered_hearts_wiki
         prompt = prompt + """
 You are an intelligent assistant who suggests the next action to take in the game.
-
 Important: You are playing a classic text adventure with a strict command parser. Your commands must follow one of these patterns:
-
 - VERB (e.g. LOOK AROUND, INVENTORY, NORTH, N, S, W, E)
 - VERB + OBJECT (e.g. EXAMINE BED, TAKE PISTOL, OPEN DOOR)
 - VERB + OBJECT + COMPLEMENT (e.g. UNLOCK DOOR WITH KEY, FIRE PISTOL AT CRULLEY)
 - Optionally: two simple actions joined by AND or THEN (e.g. TAKE HORN AND BLOW IT)
-
-You may use prepositions to indicate precisely what you want to do: 'LOOK AT the object', 'LOOK INSIDE it', 'LOOK UNDER it'
-Avoid all questions, complex grammar, adverbs, or unknown words. Use only commands likely to be understood by a 1980s parser. Never include full sentences in the 'prompt' field — only one valid command.
 """
-        # prompt = prompt + "Here is the known solution for the game but please don't jump to the end directly : "
-        # prompt = prompt + plundered_hearts_solution
+        prompt = prompt + "Here is the user manual regarding the parser commands : "
+        prompt = prompt + plundered_hearts_user_manual
         prompt = prompt + "Here is the latest output from the game : "
         prompt = prompt + prev_output
         if prev_cmd is not None:
             prompt = prompt + "Your previous command was : '" + prev_cmd + "'."
         prompt = prompt + "From the known solution of the game, you know the next good command will be : " + cmd
-        prompt = prompt + "Please provide a JSON with two keys : 'comment' key to explain (IN FRENCH) why this is the best thing to do in this context, 'prompt' key that will only contain the command you suggest."
-
+        prompt = prompt + "Here is the known solution for the game but please don't jump to the end directly : "
+        prompt = prompt + plundered_hearts_solution
+        prompt = prompt + "Please provide a JSON with one key :"
+        prompt = prompt + " - 'comment' key to give a detailled feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, then explain, IN FRENCH ARGOT, FIRST PERSON, what to do and why this is the best thing in this context."
+        prompt = prompt + " - 'command' key that will describe out loud, in a familiar or slang-ish way, IN FRENCH ARGOT, FIRST PERSON, the command in itself, put in context."
+        # prompt = prompt + " - 'prompt' key that will only contain the command that you suggest given all the context you have at hand."
         json_command = None
-        while json_command is None:
+
+        retry = 0
+        while json_command is None or not("comment" in json_command) or not("command" in json_command):
             response = ollama.chat(
                 model='llama3:8b',
                 # model = 'deepseek-r1:7b',
@@ -242,26 +312,40 @@ Avoid all questions, complex grammar, adverbs, or unknown words. Use only comman
             )
             # print(response.message.content)
             json_command = extract_and_parse_json(response.message.content)
+            if retry > 0:
+                print("Retry #" + str(retry))
+            retry = retry + 1
 
         # print("\n")
-        print("<AI thinks : '" + json_command["comment"] + "'>\n")
+        ai_thinking = json_command["comment"] + "\n" + json_command["command"]
+        print("<AI thinks : '" + ai_thinking + "'>\n")
+        time.sleep(estimate_reading_time(ai_thinking))
         # command = json_command["prompt"]
         # command = command.replace(">", "").strip().upper()
-        command = cmd
+        command = cmd.strip().upper()
+        print("> " + command.strip() + "\n")
         child.sendline(" " + command)
         prev_output = ""
         prev_cmd = command
 
-        # read several lines in a row
-        while True:
-            i = child.expect([r"\r\x1b", pexpect.EOF, pexpect.TIMEOUT], timeout=2)
-            # print(child.before)
-            print(clean_output(child.before))
-            prev_output = prev_output + clean_output(child.before)
-            if i != 0:
+        # Flush output after command
+        buffer = ""
+        start_time = time.time()
+        timeout_seconds = 4  # lecture max après commande
+        while time.time() - start_time < timeout_seconds:
+            try:
+                chunk = child.read_nonblocking(size=1024, timeout=0.3)
+                buffer += chunk
+            except pexpect.exceptions.TIMEOUT:
                 break
 
-        # time.sleep(0.3)  # artificially wait to allow reading
+        cleaned = clean_output(buffer)
+        print(cleaned)
+        prev_output = cleaned
+
+        time.sleep(0.3)  # artificially wait to allow reading
+
+        cmd_index = cmd_index + 1
 
     except pexpect.EOF:
         print("Game ended.")
@@ -269,6 +353,6 @@ Avoid all questions, complex grammar, adverbs, or unknown words. Use only comman
     except KeyboardInterrupt:
         print("User stopped the game.")
         break
-    except Exception as e:
-        print(f"Error found at step {step+1}: {e}")
-        break
+    # except Exception as e:
+    #     print(f"Error found at step {step+1}: {e}")
+    #     break
