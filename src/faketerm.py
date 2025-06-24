@@ -7,6 +7,20 @@ import time
 import re
 import json
 
+def json_command_is_valid(json_command):
+    if json_command is None:
+        return False
+    if not("comment" in json_command):
+        return False
+    if not("command" in json_command):
+        return False
+    if not isinstance(json_command["comment"], str):
+        return False
+    if not isinstance(json_command["command"], str):
+        return False
+    
+    return True
+
 def estimate_reading_time(text, wps=4.0, min_delay=0.3, max_delay=5.0):
     """Estimate a human-readable delay (in seconds) based on word count."""
     word_count = len(text.strip().split())
@@ -272,12 +286,11 @@ prev_cmd = None
 # automated walkthrough
 while True : # for step, cmd in enumerate(plundered_hearts_commands):
     cmd = plundered_hearts_commands[cmd_index]
-# for step, cmd in enumerate(plundered_hearts_commands):
-    try:
-        prompt = "You are playing Pludered Hearts, a text interactive fiction by Amy Briggs."
-        prompt = prompt + "Here is what Wikipedia says about this game : "
-        prompt = prompt + plundered_hearts_wiki
-        prompt = prompt + """
+
+    prompt = "You are playing Pludered Hearts, a text interactive fiction by Amy Briggs."
+    prompt = prompt + "Here is what Wikipedia says about this game : "
+    prompt = prompt + plundered_hearts_wiki
+    prompt = prompt + """
 You are an intelligent assistant who suggests the next action to take in the game.
 Important: You are playing a classic text adventure with a strict command parser. Your commands must follow one of these patterns:
 - VERB (e.g. LOOK AROUND, INVENTORY, NORTH, N, S, W, E)
@@ -285,74 +298,65 @@ Important: You are playing a classic text adventure with a strict command parser
 - VERB + OBJECT + COMPLEMENT (e.g. UNLOCK DOOR WITH KEY, FIRE PISTOL AT CRULLEY)
 - Optionally: two simple actions joined by AND or THEN (e.g. TAKE HORN AND BLOW IT)
 """
-        prompt = prompt + "Here is the user manual regarding the parser commands : "
-        prompt = prompt + plundered_hearts_user_manual
-        prompt = prompt + "Here is the latest output from the game : "
-        prompt = prompt + prev_output
-        if prev_cmd is not None:
-            prompt = prompt + "Your previous command was : '" + prev_cmd + "'."
-        prompt = prompt + "From the known solution of the game, you know the next good command will be : " + cmd
-        prompt = prompt + "Here is the known solution for the game but please don't jump to the end directly : "
-        prompt = prompt + plundered_hearts_solution
-        prompt = prompt + "Please provide a JSON with one key :"
-        prompt = prompt + " - 'comment' key to give a detailled feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, then explain, IN FRENCH ARGOT, FIRST PERSON, what to do and why this is the best thing in this context."
-        prompt = prompt + " - 'command' key that will describe out loud, in a familiar or slang-ish way, IN FRENCH ARGOT, FIRST PERSON, the command in itself, put in context."
-        # prompt = prompt + " - 'prompt' key that will only contain the command that you suggest given all the context you have at hand."
-        json_command = None
+    prompt = prompt + "Here is the user manual regarding the parser commands : "
+    prompt = prompt + plundered_hearts_user_manual
+    prompt = prompt + "Here is the latest output from the game : "
+    prompt = prompt + prev_output
+    if prev_cmd is not None:
+        prompt = prompt + "Your previous command was : '" + prev_cmd + "'."
+    prompt = prompt + "From the known solution of the game, you know the next good command will be : " + cmd
+    # prompt = prompt + "Here is the known solution for the game but please don't jump to the end directly : "
+    # prompt = prompt + plundered_hearts_solution
+    prompt = prompt + "Please provide a JSON with one key :"
+    prompt = prompt + " - 'comment' key to give a detailled feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, then explain, IN FRENCH ARGOT, FIRST PERSON, what to do and why this is the best thing in this context."
+    prompt = prompt + " - 'command' key that will describe out loud, in a familiar or slang-ish way, IN FRENCH ARGOT, FIRST PERSON, the command in itself, put in context."
+    # prompt = prompt + " - 'prompt' key that will only contain the command that you suggest given all the context you have at hand."
+    prompt = prompt + "When thinking out loud, you refer yourself (and yourself only) as 'meuf' or 'frère'"
+    json_command = None
 
-        retry = 0
-        while json_command is None or not("comment" in json_command) or not("command" in json_command):
-            response = ollama.chat(
-                model='llama3:8b',
-                # model = 'deepseek-r1:7b',
-                messages=[{
-                    'role': 'user',
-                    'content': prompt
-                    }]
-            )
-            # print(response.message.content)
-            json_command = extract_and_parse_json(response.message.content)
-            if retry > 0:
-                print("Retry #" + str(retry))
-            retry = retry + 1
+    retry = 0
+    while not json_command_is_valid(json_command): # json_command is None or not("comment" in json_command) or not("command" in json_command):
+        response = ollama.chat(
+            model='llama3:8b',
+            # model = 'deepseek-r1:7b',
+            messages=[{
+                'role': 'user',
+                'content': prompt
+                }]
+        )
+        # print(response.message.content)
+        json_command = extract_and_parse_json(response.message.content)
+        if retry > 0:
+            print("Retry #" + str(retry))
+        retry = retry + 1
 
-        # print("\n")
-        ai_thinking = json_command["comment"] + "\n" + json_command["command"]
-        print("<AI thinks : '" + ai_thinking + "'>\n")
-        time.sleep(estimate_reading_time(ai_thinking))
-        # command = json_command["prompt"]
-        # command = command.replace(">", "").strip().upper()
-        command = cmd.strip().upper()
-        print("> " + command.strip() + "\n")
-        child.sendline(" " + command)
-        prev_output = ""
-        prev_cmd = command
+    # print("\n")
+    ai_thinking = json_command["comment"] + "\n" + json_command["command"]
+    print("<AI thinks : '" + ai_thinking + "'>\n")
+    time.sleep(estimate_reading_time(ai_thinking))
+    # command = json_command["prompt"]
+    # command = command.replace(">", "").strip().upper()
+    command = cmd.strip().upper()
+    print("> " + command.strip() + "\n")
+    child.sendline(" " + command)
+    prev_output = ""
+    prev_cmd = command
 
-        # Flush output after command
-        buffer = ""
-        start_time = time.time()
-        timeout_seconds = 4  # lecture max après commande
-        while time.time() - start_time < timeout_seconds:
-            try:
-                chunk = child.read_nonblocking(size=1024, timeout=0.3)
-                buffer += chunk
-            except pexpect.exceptions.TIMEOUT:
-                break
+    # Flush output after command
+    buffer = ""
+    start_time = time.time()
+    timeout_seconds = 4  # lecture max après commande
+    while time.time() - start_time < timeout_seconds:
+        try:
+            chunk = child.read_nonblocking(size=1024, timeout=0.3)
+            buffer += chunk
+        except pexpect.exceptions.TIMEOUT:
+            break
 
-        cleaned = clean_output(buffer)
-        print(cleaned)
-        prev_output = cleaned
+    cleaned = clean_output(buffer)
+    print(cleaned)
+    prev_output = cleaned
 
-        time.sleep(0.3)  # artificially wait to allow reading
+    time.sleep(0.3)  # artificially wait to allow reading
 
-        cmd_index = cmd_index + 1
-
-    except pexpect.EOF:
-        print("Game ended.")
-        break
-    except KeyboardInterrupt:
-        print("User stopped the game.")
-        break
-    # except Exception as e:
-    #     print(f"Error found at step {step+1}: {e}")
-    #     break
+    cmd_index = cmd_index + 1
