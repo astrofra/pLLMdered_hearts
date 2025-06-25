@@ -1,4 +1,4 @@
-# 💬 *PLLMdered Hearts*
+# 💬 *pLLMdered hearts*
 
 **Installation interactive (ou pas)**
 
