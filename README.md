@@ -1,4 +1,4 @@
-# 💬 *PLLuMdered Hearts* - Une IA romantique
+# 💬 *pLLMdered hearts*
 
 **Installation interactive (ou pas)**
 
