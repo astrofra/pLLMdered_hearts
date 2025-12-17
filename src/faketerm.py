@@ -1,6 +1,8 @@
 import os
 os.environ["OLLAMA_NO_CUDA"] = "1"
 
+## FIXME "[Press RETURN or ENTER to continue.]"
+
 import ollama
 import pexpect
 import time
@@ -32,6 +34,10 @@ def extract_and_parse_json(text):
     Extracts the first JSON object found inside triple backticks or code-like blocks from the input text,
     and returns it as a Python dictionary.
     """
+
+    stop_strings = ["```json", "```", "\n"]
+    for _stop in stop_strings:
+        text = text.replace(_stop, '')
 
     # Try to find JSON inside ```json ... ``` blocks
     match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
@@ -204,6 +210,12 @@ The Plundered Hearts package included an elegant velvet reticule (pouch) contain
 Game reviewers complimented Plundered Hearts for its gripping prose, challenging predicaments, and scenes of derring-do. Other publications said it was a good introduction to interactive fiction, with writing suitable for both men and women. Some noted that the genre might have alienated Infocom's typical audience, but praised its bold direction nonetheless.
 """
 
+plundered_hearts_fandom = """
+You play Lady Dimsford, a young, aristocratic woman in the 17th century. She receives a letter from Jean Lafond, the governor of an island in the West Indies, informing her that her father is dying of a tropical disease. Lafond sends a ship to bring her to his island. The ship is then intercepted by notorious pirate Captain Jamison. However, it turns out that Lafond has kidnapped Lady Dimsford's father for his own purposes. The Lady and the pirate work together to defeat him.
+The game can be played to completion with four potential endings. However, in only one ending do all of the Lady's loved ones survive. If another ending is arrived at, the user is informed that "There are other, perhaps more satisfying, conclusions."
+There was a divide within Infocom regarding whether interactive fiction protagonists should be "audience stand-ins", or whether they should have defined characters. For instance, after negative reaction to the anti-hero protagonist of Infidel, implementor Michael Berlyn concluded that "People really don’t want to know who they are [in a game]." Plundered Hearts falls on the opposite side of the spectrum. Lady Dimsford's capable and spunky personality subverts the game's "damsel in distress" setup.
+"""
+
 plundered_hearts_user_manual = """Communicating with Infocom's Interactive Fiction
 In Plundered Hearts, you type your commands in plain English each time you see the prompt (>). Plundered
 Hearts usually acts as if your commands begin with "I want to...," although you shouldn't actually type those
@@ -286,7 +298,8 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
 
     prompt = "You are playing Pludered Hearts, a text interactive fiction by Amy Briggs."
     prompt = prompt + "Here is what Wikipedia says about this game : "
-    prompt = prompt + plundered_hearts_wiki
+    # prompt = prompt + plundered_hearts_wiki
+    prompt = prompt + plundered_hearts_fandom
     prompt = prompt + """
 You are an intelligent assistant who suggests the next action to take in the game.
 Important: You are playing a classic text adventure with a strict command parser. Your commands must follow one of these patterns:
@@ -301,21 +314,20 @@ Important: You are playing a classic text adventure with a strict command parser
     prompt = prompt + prev_output
     if prev_cmd is not None:
         prompt = prompt + "Your previous command was : '" + prev_cmd + "'."
-    prompt = prompt + "From the known solution of the game, you know the next good command will be : " + cmd
+    # prompt = prompt + "From the known solution of the game, you know the next good command will be : " + cmd
     # prompt = prompt + "Here is the known solution for the game but please don't jump to the end directly : "
     # prompt = prompt + plundered_hearts_solution
-    prompt = prompt + "Please provide a JSON with one key :"
+    prompt = prompt + "ALWAYS PROVIDE THE ANSWER AS A JSON with two keys :"
     prompt = prompt + " - 'comment' key to give a detailled feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, then explain, IN FRENCH ARGOT, FIRST PERSON, what to do and why this is the best thing in this context."
-    prompt = prompt + " - 'command' key that will describe out loud, in a familiar or slang-ish way, IN FRENCH ARGOT, FIRST PERSON, the command in itself, put in context."
-    # prompt = prompt + " - 'prompt' key that will only contain the command that you suggest given all the context you have at hand."
+    # prompt = prompt + " - 'command' key that will describe out loud, in a familiar or slang-ish way, IN FRENCH ARGOT, FIRST PERSON, the command in itself, put in context."
+    prompt = prompt + " - 'prompt' key that will only contain the command that you suggest given all the context you have at hand."
     prompt = prompt + "When thinking out loud, you refer yourself (and yourself only) as 'meuf' or 'frère'"
     json_command = None
 
     retry = 0
     while not json_command_is_valid(json_command): # json_command is None or not("comment" in json_command) or not("command" in json_command):
         response = ollama.chat(
-            model='llama3:8b',
-            # model = 'deepseek-r1:7b',
+            model= 'ministral-3:14b', # , 'qwen3:8b', # 'gpt-oss:20b', # 'llama3:8b', # model = 'deepseek-r1:7b',
             messages=[{
                 'role': 'user',
                 'content': prompt
@@ -330,10 +342,10 @@ Important: You are playing a classic text adventure with a strict command parser
     # print("\n")
     ai_thinking = json_command["comment"] + "\n" + json_command["command"]
     print("<AI thinks : '" + ai_thinking + "'>\n")
-    time.sleep(estimate_reading_time(ai_thinking))
-    # command = json_command["prompt"]
+    # time.sleep(estimate_reading_time(ai_thinking))
+    command = json_command["prompt"]
     # command = command.replace(">", "").strip().upper()
-    command = cmd.strip().upper()
+    # command = cmd.strip().upper()
     print("> " + command.strip() + "\n")
     child.sendline(" " + command)
     prev_output = ""
