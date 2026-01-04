@@ -1,13 +1,16 @@
 import os
-# os.environ["OLLAMA_NO_CUDA"] = "1"
-
-## FIXME "[Press RETURN or ENTER to continue.]"
-
 import ollama
 import pexpect
 import time
 import re
 import json
+
+# os.environ["OLLAMA_NO_CUDA"] = "1"
+
+## FIXME "[Press RETURN or ENTER to continue.]"
+
+ENABLE_LLM = False
+ENABLE_READING_PAUSE = False
 
 def llm_response_is_valid(llm_commentary):
     if llm_commentary is None:
@@ -47,8 +50,6 @@ def extract_and_parse_json(text):
     else:
         print("No JSON block found.")
         return None
-
-import re
 
 # Match ANSI escape sequences like ESC[31m or ESC[2J
 ansi_escape = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
@@ -223,38 +224,41 @@ prev_cmd = None
 while True : # for step, cmd in enumerate(plundered_hearts_commands):
     cmd = plundered_hearts_commands[cmd_index]
 
-    prompt = "You are playing Pludered Hearts, a text interactive fiction by Amy Briggs."
-    prompt = prompt + "Here is what Wikipedia says about this game : "
-    prompt = prompt + plundered_hearts_wiki
-    prompt = prompt + plundered_hearts_fandom
+    if ENABLE_LLM:
+        prompt = "You are playing Pludered Hearts, a text interactive fiction by Amy Briggs."
+        prompt = prompt + "Here is what Wikipedia says about this game : "
+        prompt = prompt + plundered_hearts_wiki
+        prompt = prompt + plundered_hearts_fandom
 
-    prompt = prompt + "Here is the latest output from the game : "
-    prompt = prompt + prev_output
+        prompt = prompt + "Here is the latest output from the game : "
+        prompt = prompt + prev_output
 
-    prompt = prompt + "From the known solution of the game, you know the next good command will be : " + cmd
-    prompt = prompt + "Please o give a detailled feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, then explain, IN FRENCH ARGOT, FIRST PERSON, what to do and why this is the best thing in this context."
-    prompt = prompt + "When thinking out loud, you refer yourself (and yourself only) as 'meuf' or 'frère'"
-    llm_commentary = None
+        prompt = prompt + "From the known solution of the game, you know the next good command will be : " + cmd
+        prompt = prompt + "Please o give a detailled feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, then explain, IN FRENCH ARGOT, FIRST PERSON, what to do and why this is the best thing in this context."
+        prompt = prompt + "When thinking out loud, you refer yourself (and yourself only) as 'meuf' or 'frère'"
+        llm_commentary = None
 
-    retry = 0
-    while llm_commentary is None: # llm_commentary is None or not("comment" in llm_commentary) or not("command" in llm_commentary):
-        response = ollama.chat(
-            model= 'ministral-3:14b', # , 'qwen3:8b', # 'gpt-oss:20b', # 'llama3:8b', # model = 'deepseek-r1:7b',
-            messages=[{
-                'role': 'user',
-                'content': prompt
-                }]
-        )
-        # print(response.message.content)
-        llm_commentary = response.message.content # extract_and_parse_json(response.message.content)
-        if retry > 0:
-            print("Retry #" + str(retry))
-        retry = retry + 1
+        retry = 0
+        while llm_commentary is None: # llm_commentary is None or not("comment" in llm_commentary) or not("command" in llm_commentary):
+            response = ollama.chat(
+                model= 'ministral-3:14b', # , 'qwen3:8b', # 'gpt-oss:20b', # 'llama3:8b', # model = 'deepseek-r1:7b',
+                messages=[{
+                    'role': 'user',
+                    'content': prompt
+                    }]
+            )
+            # print(response.message.content)
+            llm_commentary = response.message.content # extract_and_parse_json(response.message.content)
+            if retry > 0:
+                print("Retry #" + str(retry))
+            retry = retry + 1
 
-    # print("\n")
-    ai_thinking = llm_commentary + "\n"
-    print("<AI thinks : '" + ai_thinking + "'>\n")
-    # time.sleep(estimate_reading_time(ai_thinking))
+        # print("\n")
+        ai_thinking = llm_commentary + "\n"
+        print("<AI thinks : '" + ai_thinking + "'>\n")
+
+        if ENABLE_READING_PAUSE:
+            time.sleep(estimate_reading_time(ai_thinking))
 
     print("> " + cmd.strip() + "\n")
     child.sendline(" " + cmd)
@@ -264,7 +268,7 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
     # Flush output after command
     buffer = ""
     start_time = time.time()
-    timeout_seconds = 4  # lecture max après commande
+    timeout_seconds = 4  # How long do we wait for the output to finish ?
     while time.time() - start_time < timeout_seconds:
         try:
             chunk = child.read_nonblocking(size=1024, timeout=0.3)
@@ -276,6 +280,7 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
     print(cleaned)
     prev_output = cleaned
 
-    time.sleep(0.3)  # artificially wait to allow reading
+    if ENABLE_READING_PAUSE:
+        time.sleep(0.3)  # artificially wait to allow reading
 
     cmd_index = cmd_index + 1
