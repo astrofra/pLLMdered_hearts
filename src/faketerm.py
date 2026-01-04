@@ -144,52 +144,6 @@ The game can be played to completion with four potential endings. However, in on
 There was a divide within Infocom regarding whether interactive fiction protagonists should be "audience stand-ins", or whether they should have defined characters. For instance, after negative reaction to the anti-hero protagonist of Infidel, implementor Michael Berlyn concluded that "People really don’t want to know who they are [in a game]." Plundered Hearts falls on the opposite side of the spectrum. Lady Dimsford's capable and spunky personality subverts the game's "damsel in distress" setup.
 """
 
-# plundered_hearts_user_manual = """Communicating with Infocom's Interactive Fiction
-# In Plundered Hearts, you type your commands in plain English each time you see the prompt (>). Plundered
-# Hearts usually acts as if your commands begin with "I want to...," although you shouldn't actually type those
-# words. You can use words like THE if you want, and you can use capital letters if you want; Plundered Hearts
-# doesn't care either way.
-# When you have finished typing a command, press the RETURN (or ENTER) key. Plundered Hearts will then
-# respond, telling you whether your request is possible at this point in the story, and what happened as a result.
-# Plundered Hearts recognizes your words by their first six letters, and all subsequent letters are ignored.
-# Therefore, CANDLE, CANDLEs, and CANDLEstick would all be treated as the same word by Plundered Hearts.
-# To move around, just type the direction you want to go. Directions can be abbreviated: NORTH to N, SOUTH to
-# S, EAST to E, WEST to W, NORTHEAST to NE, NORTHWEST to NW, SOUTHEAST to SE, SOUTHWEST to
-# SW, UP to U, and DOWN to D. Remember that IN and OUT will also work in certain places. Aboard a ship, you
-# can use the directions FORE (or F), AFT, PORT (or P), and STARBOARD (or SB).
-# Plundered Hearts understands many different kinds of sentences. Here are several examples. (Note some of these
-# do not actually appear in Plundered Hearts.)
-# >WALK NORTH
-# >DOWN
-# >NE
-# >GO AFT
-# >TAKE THE RED CANDLE
-# >READ THE SIGN
-# >LOOK UNDER THE BED
-# >OPEN THE HATCH
-# >DANCE WITH WILLIAM
-# >CLIMB THE LADDER
-# >PRESS THE GREEN BUTTON
-# >EXAMINE THE RAPIER
-# >SWING ON THE ROPE
-# >PUT ON THE PETTICOAT
-# >WEAR THE TIARA
-# >KNOCK ON THE DOOR
-# >SHOOT THE PEBBLE WITH THE SLINGSHOT
-# >UNLOCK THE BOX WITH THE KEY
-# >CUT THE ROPE WITH THE SCISSORS
-# >PUT THE COLLAR ON THE DOG
-# >THROW THE GOBLET OUT THE WINDOW
-# You can use multiple objects with certain verbs if you separate them by the word AND or by a comma. Some
-# examples:
-# >TAKE BOOK AND KNIFE
-# >DROP THE HOOPS, THE BRACELET AND THE TRAY
-# >PUT THE PEARL AND THE SHELL IN THE BOX
-# You can include several sentences on one input line if you separate them by the word THEN or by a period.
-# (Note that each sentence will still count as a turn.) You don't need a period at the end of the input line. For example,
-# you could type all of the following at once, before pressing the RETURN (or ENTER) key:
-# >READ THE SIGN. GO NORTH THEN DROP THE STONE AND MAP"""
-
 # run frotz through a terminal emulator, using the ascii mode
 # child = pexpect.spawn("frotz -p roms/PLUNDERE.z3", encoding='utf-8', timeout=5)
 from pexpect.popen_spawn import PopenSpawn
