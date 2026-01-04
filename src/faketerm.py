@@ -25,15 +25,20 @@ ENABLE_C64_RENDERER = True
 LOGICAL_WIDTH = 640
 LOGICAL_HEIGHT = 400
 C64_COLS = 80
-C64_ROWS = 25
-C64_CELL_SIZE = 10
+C64_ROWS = 50
+C64_CELL_SIZE = 8
 
 C64_BLUE = (64, 49, 141)
+C64_LIGHT_BLUE = (64 * 3 // 2, 49 * 3 // 2, 141 * 3 // 2)
 C64_LIGHT_GRAY = (202, 202, 202)
 C64_WHITE = (255, 255, 255)
 C64_BLACK = (0, 0, 0)
 
-C64_FONT_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "c64_font.png")
+# Distinct border styling so it stays visible against the screen background.
+C64_BORDER_COLOR = C64_LIGHT_BLUE
+BORDER_THICKNESS = 64
+
+C64_FONT_PATH = None  # Using built-in fallback font; no external sprite sheet required.
 
 def llm_response_is_valid(llm_commentary):
     if llm_commentary is None:
@@ -114,7 +119,7 @@ def clean_output(text):
 class C64Renderer:
     def __init__(
         self,
-        font_path=C64_FONT_PATH,
+        font_path=None,
         scale=None,
         fps=60,
         enable_scanlines=False,
@@ -132,7 +137,9 @@ class C64Renderer:
         self.enable_flicker = enable_flicker
         self.enable_blur = enable_blur
         self.scale = self._determine_scale(scale)
-        self.window = pygame.display.set_mode((LOGICAL_WIDTH * self.scale, LOGICAL_HEIGHT * self.scale))
+        self.window_width = LOGICAL_WIDTH * self.scale + BORDER_THICKNESS * 2
+        self.window_height = LOGICAL_HEIGHT * self.scale + BORDER_THICKNESS * 2
+        self.window = pygame.display.set_mode((self.window_width, self.window_height))
         self.clock = pygame.time.Clock()
 
         # Use per-pixel alpha so scanline overlay blends correctly; fill with opaque blue each frame.
@@ -150,8 +157,10 @@ class C64Renderer:
             return max(1, int(forced_scale))
         try:
             info = pygame.display.Info()
-            max_w = max(1, info.current_w // LOGICAL_WIDTH)
-            max_h = max(1, info.current_h // LOGICAL_HEIGHT)
+            usable_w = max(1, info.current_w - BORDER_THICKNESS * 2)
+            usable_h = max(1, info.current_h - BORDER_THICKNESS * 2)
+            max_w = max(1, usable_w // LOGICAL_WIDTH)
+            max_h = max(1, usable_h // LOGICAL_HEIGHT)
             return max(1, min(max_w, max_h))
         except pygame.error:
             return 2
@@ -165,21 +174,7 @@ class C64Renderer:
         return overlay
 
     def _load_font(self, font_path):
-        if font_path and os.path.exists(font_path):
-            sheet = pygame.image.load(font_path).convert_alpha()
-            colorkey = sheet.get_at((0, 0))
-            sheet.set_colorkey(colorkey)
-            glyphs = {}
-            for code in range(256):
-                gx = (code % 16) * C64_CELL_SIZE
-                gy = (code // 16) * C64_CELL_SIZE
-                glyph = pygame.Surface((C64_CELL_SIZE, C64_CELL_SIZE), pygame.SRCALPHA).convert_alpha()
-                glyph.fill((*C64_BLUE, 0))
-                glyph.blit(sheet, (0, 0), pygame.Rect(gx, gy, C64_CELL_SIZE, C64_CELL_SIZE))
-                glyphs[code] = glyph
-            return glyphs
-
-        print(f"Warning: font sprite sheet missing at {font_path}. Falling back to a minimal pixel font.")
+        # Always use the built-in placeholder font to avoid external dependencies.
         return self._build_placeholder_font()
 
     def _fallback_pattern(self, char):
@@ -310,6 +305,78 @@ class C64Renderer:
                 "  X  ",
                 "  X  ",
                 "     ",
+            ],
+            "<": [
+                "    X",
+                "   X ",
+                "  X  ",
+                " X   ",
+                "  X  ",
+                "   X ",
+                "    X",
+            ],
+            ">": [
+                "X    ",
+                " X   ",
+                "  X  ",
+                "   X ",
+                "  X  ",
+                " X   ",
+                "X    ",
+            ],
+            "[": [
+                " XXX ",
+                " X   ",
+                " X   ",
+                " X   ",
+                " X   ",
+                " X   ",
+                " XXX ",
+            ],
+            "]": [
+                " XXX ",
+                "   X ",
+                "   X ",
+                "   X ",
+                "   X ",
+                "   X ",
+                " XXX ",
+            ],
+            "(": [
+                "   X ",
+                "  X  ",
+                " X   ",
+                " X   ",
+                " X   ",
+                "  X  ",
+                "   X ",
+            ],
+            ")": [
+                " X   ",
+                "  X  ",
+                "   X ",
+                "   X ",
+                "   X ",
+                "  X  ",
+                " X   ",
+            ],
+            "{": [
+                "   XX",
+                "  X  ",
+                "  X  ",
+                " XX  ",
+                "  X  ",
+                "  X  ",
+                "   XX",
+            ],
+            "}": [
+                "XX   ",
+                "  X  ",
+                "  X  ",
+                "  XX ",
+                "  X  ",
+                "  X  ",
+                "XX   ",
             ],
         }
         if char in patterns:
@@ -735,8 +802,10 @@ class C64Renderer:
                     overlay.fill((*C64_BLACK, int(255 * abs(flicker))))
                     scaled.blit(overlay, (0, 0), special_flags=pygame.BLEND_RGBA_SUB)
 
-        self.window.fill(C64_BLUE)
-        self.window.blit(scaled, (0, 0))
+        self.window.fill(C64_BORDER_COLOR)
+        self.window.blit(scaled, (BORDER_THICKNESS, BORDER_THICKNESS))
+        if BORDER_THICKNESS > 0:
+            pygame.draw.rect(self.window, C64_BORDER_COLOR, self.window.get_rect(), BORDER_THICKNESS)
         pygame.display.flip()
         self.clock.tick(self.fps)
 
