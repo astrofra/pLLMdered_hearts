@@ -22,11 +22,12 @@ ENABLE_READING_PAUSE = False
 ENABLE_C64_RENDERER = True
 
 # Commodore 64 style display settings
-LOGICAL_WIDTH = 640
-LOGICAL_HEIGHT = 400
 C64_COLS = 80
 C64_ROWS = 50
-C64_CELL_SIZE = 8
+C64_CELL_SIZE_H = 8
+C64_CELL_SIZE_V = 10
+LOGICAL_WIDTH = C64_COLS * C64_CELL_SIZE_H
+LOGICAL_HEIGHT = C64_ROWS * C64_CELL_SIZE_V
 
 C64_BLUE = (64, 49, 141)
 C64_LIGHT_BLUE = (64 * 3 // 2, 49 * 3 // 2, 141 * 3 // 2)
@@ -35,7 +36,7 @@ C64_WHITE = (255, 255, 255)
 C64_BLACK = (0, 0, 0)
 
 # Distinct border styling so it stays visible against the screen background.
-C64_BORDER_COLOR = C64_LIGHT_BLUE
+C64_BORDER_COLOR = C64_BLUE
 BORDER_THICKNESS = 64
 
 C64_FONT_PATH = None  # Using built-in fallback font; no external sprite sheet required.
@@ -720,7 +721,7 @@ class C64Renderer:
         return glyphs
 
     def _render_pattern(self, pattern_lines):
-        surface = pygame.Surface((C64_CELL_SIZE, C64_CELL_SIZE), pygame.SRCALPHA).convert_alpha()
+        surface = pygame.Surface((C64_CELL_SIZE_H, C64_CELL_SIZE_V), pygame.SRCALPHA).convert_alpha()
         surface.fill((*C64_BLUE, 0))
         top_margin = 1
         left_margin = 1
@@ -775,7 +776,7 @@ class C64Renderer:
         for y, row in enumerate(self.buffer):
             for x, ch in enumerate(row):
                 glyph = self._glyph_for_char(ch)
-                self.logical_surface.blit(glyph, (x * C64_CELL_SIZE, y * C64_CELL_SIZE))
+                self.logical_surface.blit(glyph, (x * C64_CELL_SIZE_H, y * C64_CELL_SIZE_V))
 
     def render_frame(self):
         self._draw_buffer()
