@@ -20,6 +20,7 @@ except ImportError:
 ENABLE_LLM = False
 ENABLE_READING_PAUSE = False
 ENABLE_C64_RENDERER = True
+ENABLE_KEYCLICK_BEEP = True
 
 # Commodore 64 style display settings
 C64_COLS = 80
@@ -810,6 +811,34 @@ class C64Renderer:
         pygame.display.flip()
         self.clock.tick(self.fps)
 
+
+def _play_key_beep():
+    """Lightweight key click using the terminal bell."""
+    if ENABLE_KEYCLICK_BEEP:
+        try:
+            sys.stdout.write("\a")
+            sys.stdout.flush()
+        except Exception:
+            pass
+
+
+def type_to_renderer(renderer, text, base_delay=0.01, min_delay=0.005, max_delay=0.12):
+    """
+    Simulate typing to the renderer: emit characters one by one with a delay
+    proportional to ASCII distance from the previous character.
+    """
+    if not renderer:
+        return
+    prev = " "
+    for ch in text:
+        renderer.write(ch)
+        renderer.render_frame()
+        distance = abs(ord(ch) - ord(prev))
+        delay = max(min_delay, min(max_delay, distance * base_delay))
+        _play_key_beep()
+        time.sleep(delay)
+        prev = ch
+
 # official Amiga solution
 plundered_hearts_commands = [
     "stand up", "inventory", "examine smelling salts", "read tag", "examine banknote",
@@ -958,8 +987,7 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
     display_cmd = "> " + cmd.strip()
     print(display_cmd + "\n")
     if renderer:
-        renderer.write(display_cmd + "\n")
-        renderer.render_frame()
+        type_to_renderer(renderer, display_cmd + "\n")
     child.sendline(" " + cmd)
     prev_output = ""
     prev_cmd = cmd
