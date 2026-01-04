@@ -273,6 +273,14 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
         try:
             chunk = child.read_nonblocking(size=1024, timeout=0.3)
             buffer += chunk
+
+            # Some screens pause with "***MORE***" and wait for an ENTER key.
+            if "***MORE***" in buffer:
+                buffer = buffer.replace("***MORE***", "")
+                child.sendline("")
+                # Give the game a moment to continue output.
+                time.sleep(0.1)
+                continue
         except pexpect.exceptions.TIMEOUT:
             break
 
