@@ -1,16 +1,39 @@
+import json
 import os
+import random
+import re
+import sys
+import time
+
 import ollama
 import pexpect
-import time
-import re
-import json
+
+try:
+    import pygame
+except ImportError:
+    pygame = None
 
 # os.environ["OLLAMA_NO_CUDA"] = "1"
 
 ## FIXME "[Press RETURN or ENTER to continue.]"
 
-ENABLE_LLM = True
+ENABLE_LLM = False
 ENABLE_READING_PAUSE = False
+ENABLE_C64_RENDERER = True
+
+# Commodore 64 style display settings
+LOGICAL_WIDTH = 640
+LOGICAL_HEIGHT = 400
+C64_COLS = 80
+C64_ROWS = 25
+C64_CELL_SIZE = 10
+
+C64_BLUE = (64, 49, 141)
+C64_LIGHT_GRAY = (202, 202, 202)
+C64_WHITE = (255, 255, 255)
+C64_BLACK = (0, 0, 0)
+
+C64_FONT_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "c64_font.png")
 
 def llm_response_is_valid(llm_commentary):
     if llm_commentary is None:
@@ -88,6 +111,635 @@ def clean_output(text):
         clean_lines.append(line)
     return '\n'.join(clean_lines).strip()
 
+class C64Renderer:
+    def __init__(
+        self,
+        font_path=C64_FONT_PATH,
+        scale=None,
+        fps=60,
+        enable_scanlines=False,
+        enable_flicker=False,
+        enable_blur=False,
+    ):
+        if pygame is None:
+            raise ImportError("pygame is required for the C64 renderer. Install pygame to enable it.")
+
+        pygame.init()
+        pygame.display.set_caption("Plundered Hearts - C64 view")
+
+        self.fps = fps
+        self.enable_scanlines = enable_scanlines
+        self.enable_flicker = enable_flicker
+        self.enable_blur = enable_blur
+        self.scale = self._determine_scale(scale)
+        self.window = pygame.display.set_mode((LOGICAL_WIDTH * self.scale, LOGICAL_HEIGHT * self.scale))
+        self.clock = pygame.time.Clock()
+
+        # Use per-pixel alpha so scanline overlay blends correctly; fill with opaque blue each frame.
+        self.logical_surface = pygame.Surface((LOGICAL_WIDTH, LOGICAL_HEIGHT), pygame.SRCALPHA).convert_alpha()
+        self.scanline_overlay = self._build_scanline_overlay()
+
+        self.cursor_x = 0
+        self.cursor_y = 0
+        self.buffer = [[" "] * C64_COLS for _ in range(C64_ROWS)]
+        self.glyphs = self._load_font(font_path)
+        self.default_glyph = self._render_pattern(self._fallback_pattern("?"))
+
+    def _determine_scale(self, forced_scale):
+        if forced_scale:
+            return max(1, int(forced_scale))
+        try:
+            info = pygame.display.Info()
+            max_w = max(1, info.current_w // LOGICAL_WIDTH)
+            max_h = max(1, info.current_h // LOGICAL_HEIGHT)
+            return max(1, min(max_w, max_h))
+        except pygame.error:
+            return 2
+
+    def _build_scanline_overlay(self):
+        overlay = pygame.Surface((LOGICAL_WIDTH, LOGICAL_HEIGHT), pygame.SRCALPHA)
+        # Start with opaque white so BLEND_RGBA_MULT keeps base pixels as-is except where lines draw.
+        overlay.fill((255, 255, 255, 255))
+        for y in range(0, LOGICAL_HEIGHT, 2):
+            pygame.draw.line(overlay, (*C64_BLACK, 64), (0, y), (LOGICAL_WIDTH, y))
+        return overlay
+
+    def _load_font(self, font_path):
+        if font_path and os.path.exists(font_path):
+            sheet = pygame.image.load(font_path).convert_alpha()
+            colorkey = sheet.get_at((0, 0))
+            sheet.set_colorkey(colorkey)
+            glyphs = {}
+            for code in range(256):
+                gx = (code % 16) * C64_CELL_SIZE
+                gy = (code // 16) * C64_CELL_SIZE
+                glyph = pygame.Surface((C64_CELL_SIZE, C64_CELL_SIZE), pygame.SRCALPHA).convert_alpha()
+                glyph.fill((*C64_BLUE, 0))
+                glyph.blit(sheet, (0, 0), pygame.Rect(gx, gy, C64_CELL_SIZE, C64_CELL_SIZE))
+                glyphs[code] = glyph
+            return glyphs
+
+        print(f"Warning: font sprite sheet missing at {font_path}. Falling back to a minimal pixel font.")
+        return self._build_placeholder_font()
+
+    def _fallback_pattern(self, char):
+        patterns = {
+            " ": ["     "] * 7,
+            "?": [
+                " XXX ",
+                "X   X",
+                "    X",
+                "  XX ",
+                "  X  ",
+                "     ",
+                "  X  ",
+            ],
+            "!": [
+                "  X  ",
+                "  X  ",
+                "  X  ",
+                "  X  ",
+                "  X  ",
+                "     ",
+                "  X  ",
+            ],
+            ".": [
+                "     ",
+                "     ",
+                "     ",
+                "     ",
+                "     ",
+                " XXX ",
+                " XXX ",
+            ],
+            ",": [
+                "     ",
+                "     ",
+                "     ",
+                "     ",
+                " XXX ",
+                "   X ",
+                "  X  ",
+            ],
+            ":": [
+                "     ",
+                "  X  ",
+                "     ",
+                "     ",
+                "  X  ",
+                "     ",
+                "     ",
+            ],
+            ";": [
+                "     ",
+                "  X  ",
+                "     ",
+                "     ",
+                "  X  ",
+                "  X  ",
+                " X   ",
+            ],
+            "-": [
+                "     ",
+                "     ",
+                "XXXXX",
+                "     ",
+                "     ",
+                "     ",
+                "     ",
+            ],
+            "'": [
+                "  X  ",
+                "  X  ",
+                "  X  ",
+                "     ",
+                "     ",
+                "     ",
+                "     ",
+            ],
+            '"': [
+                " X X ",
+                " X X ",
+                " X X ",
+                "     ",
+                "     ",
+                "     ",
+                "     ",
+            ],
+            "(": [
+                "   X ",
+                "  X  ",
+                " X   ",
+                " X   ",
+                " X   ",
+                "  X  ",
+                "   X ",
+            ],
+            ")": [
+                " X   ",
+                "  X  ",
+                "   X ",
+                "   X ",
+                "   X ",
+                "  X  ",
+                " X   ",
+            ],
+            "/": [
+                "    X",
+                "   X ",
+                "  X  ",
+                " X   ",
+                "X    ",
+                "     ",
+                "     ",
+            ],
+            "\\": [
+                "X    ",
+                " X   ",
+                "  X  ",
+                "   X ",
+                "    X",
+                "     ",
+                "     ",
+            ],
+            "+": [
+                "     ",
+                "  X  ",
+                "  X  ",
+                "XXXXX",
+                "  X  ",
+                "  X  ",
+                "     ",
+            ],
+        }
+        if char in patterns:
+            return patterns[char]
+        return patterns["?"]
+
+    def _build_placeholder_font(self):
+        letters = {
+            "A": [
+                " XXX ",
+                "X   X",
+                "X   X",
+                "XXXXX",
+                "X   X",
+                "X   X",
+                "X   X",
+            ],
+            "B": [
+                "XXXX ",
+                "X   X",
+                "X   X",
+                "XXXX ",
+                "X   X",
+                "X   X",
+                "XXXX ",
+            ],
+            "C": [
+                " XXX ",
+                "X   X",
+                "X    ",
+                "X    ",
+                "X    ",
+                "X   X",
+                " XXX ",
+            ],
+            "D": [
+                "XXXX ",
+                "X   X",
+                "X   X",
+                "X   X",
+                "X   X",
+                "X   X",
+                "XXXX ",
+            ],
+            "E": [
+                "XXXXX",
+                "X    ",
+                "X    ",
+                "XXXX ",
+                "X    ",
+                "X    ",
+                "XXXXX",
+            ],
+            "F": [
+                "XXXXX",
+                "X    ",
+                "X    ",
+                "XXXX ",
+                "X    ",
+                "X    ",
+                "X    ",
+            ],
+            "G": [
+                " XXX ",
+                "X   X",
+                "X    ",
+                "X XXX",
+                "X   X",
+                "X   X",
+                " XXX ",
+            ],
+            "H": [
+                "X   X",
+                "X   X",
+                "X   X",
+                "XXXXX",
+                "X   X",
+                "X   X",
+                "X   X",
+            ],
+            "I": [
+                " XXX ",
+                "  X  ",
+                "  X  ",
+                "  X  ",
+                "  X  ",
+                "  X  ",
+                " XXX ",
+            ],
+            "J": [
+                "  XXX",
+                "   X ",
+                "   X ",
+                "   X ",
+                "   X ",
+                "X  X ",
+                " XX  ",
+            ],
+            "K": [
+                "X   X",
+                "X  X ",
+                "X X  ",
+                "XX   ",
+                "X X  ",
+                "X  X ",
+                "X   X",
+            ],
+            "L": [
+                "X    ",
+                "X    ",
+                "X    ",
+                "X    ",
+                "X    ",
+                "X    ",
+                "XXXXX",
+            ],
+            "M": [
+                "X   X",
+                "XX XX",
+                "X X X",
+                "X   X",
+                "X   X",
+                "X   X",
+                "X   X",
+            ],
+            "N": [
+                "X   X",
+                "XX  X",
+                "X X X",
+                "X  XX",
+                "X   X",
+                "X   X",
+                "X   X",
+            ],
+            "O": [
+                " XXX ",
+                "X   X",
+                "X   X",
+                "X   X",
+                "X   X",
+                "X   X",
+                " XXX ",
+            ],
+            "P": [
+                "XXXX ",
+                "X   X",
+                "X   X",
+                "XXXX ",
+                "X    ",
+                "X    ",
+                "X    ",
+            ],
+            "Q": [
+                " XXX ",
+                "X   X",
+                "X   X",
+                "X   X",
+                "X X X",
+                "X  X ",
+                " XX X",
+            ],
+            "R": [
+                "XXXX ",
+                "X   X",
+                "X   X",
+                "XXXX ",
+                "X X  ",
+                "X  X ",
+                "X   X",
+            ],
+            "S": [
+                " XXXX",
+                "X    ",
+                "X    ",
+                " XXX ",
+                "    X",
+                "    X",
+                "XXXX ",
+            ],
+            "T": [
+                "XXXXX",
+                "  X  ",
+                "  X  ",
+                "  X  ",
+                "  X  ",
+                "  X  ",
+                "  X  ",
+            ],
+            "U": [
+                "X   X",
+                "X   X",
+                "X   X",
+                "X   X",
+                "X   X",
+                "X   X",
+                " XXX ",
+            ],
+            "V": [
+                "X   X",
+                "X   X",
+                "X   X",
+                "X   X",
+                "X   X",
+                " X X ",
+                "  X  ",
+            ],
+            "W": [
+                "X   X",
+                "X   X",
+                "X   X",
+                "X X X",
+                "X X X",
+                "XX XX",
+                "X   X",
+            ],
+            "X": [
+                "X   X",
+                "X   X",
+                " X X ",
+                "  X  ",
+                " X X ",
+                "X   X",
+                "X   X",
+            ],
+            "Y": [
+                "X   X",
+                "X   X",
+                " X X ",
+                "  X  ",
+                "  X  ",
+                "  X  ",
+                "  X  ",
+            ],
+            "Z": [
+                "XXXXX",
+                "    X",
+                "   X ",
+                "  X  ",
+                " X   ",
+                "X    ",
+                "XXXXX",
+            ],
+            "0": [
+                " XXX ",
+                "X   X",
+                "X  XX",
+                "X X X",
+                "XX  X",
+                "X   X",
+                " XXX ",
+            ],
+            "1": [
+                "  X  ",
+                " XX  ",
+                "  X  ",
+                "  X  ",
+                "  X  ",
+                "  X  ",
+                " XXX ",
+            ],
+            "2": [
+                " XXX ",
+                "X   X",
+                "    X",
+                "   X ",
+                "  X  ",
+                " X   ",
+                "XXXXX",
+            ],
+            "3": [
+                " XXX ",
+                "X   X",
+                "    X",
+                "  XX ",
+                "    X",
+                "X   X",
+                " XXX ",
+            ],
+            "4": [
+                "   X ",
+                "  XX ",
+                " X X ",
+                "X  X ",
+                "XXXXX",
+                "   X ",
+                "   X ",
+            ],
+            "5": [
+                "XXXXX",
+                "X    ",
+                "X    ",
+                "XXXX ",
+                "    X",
+                "    X",
+                "XXXX ",
+            ],
+            "6": [
+                " XXX ",
+                "X    ",
+                "X    ",
+                "XXXX ",
+                "X   X",
+                "X   X",
+                " XXX ",
+            ],
+            "7": [
+                "XXXXX",
+                "    X",
+                "   X ",
+                "  X  ",
+                "  X  ",
+                "  X  ",
+                "  X  ",
+            ],
+            "8": [
+                " XXX ",
+                "X   X",
+                "X   X",
+                " XXX ",
+                "X   X",
+                "X   X",
+                " XXX ",
+            ],
+            "9": [
+                " XXX ",
+                "X   X",
+                "X   X",
+                " XXXX",
+                "    X",
+                "    X",
+                " XXX ",
+            ],
+        }
+
+        glyphs = {}
+        for code in range(256):
+            char = chr(code)
+            upper_char = char.upper()
+            pattern = letters.get(upper_char) or self._fallback_pattern(char) or self._fallback_pattern("?")
+            glyphs[code] = self._render_pattern(pattern)
+        return glyphs
+
+    def _render_pattern(self, pattern_lines):
+        surface = pygame.Surface((C64_CELL_SIZE, C64_CELL_SIZE), pygame.SRCALPHA).convert_alpha()
+        surface.fill((*C64_BLUE, 0))
+        top_margin = 1
+        left_margin = 1
+        for row_idx, line in enumerate(pattern_lines):
+            for col_idx, char in enumerate(line):
+                if char != " ":
+                    surface.set_at((left_margin + col_idx, top_margin + row_idx), C64_LIGHT_GRAY)
+        return surface
+
+    def clear(self):
+        self.buffer = [[" "] * C64_COLS for _ in range(C64_ROWS)]
+        self.cursor_x = 0
+        self.cursor_y = 0
+
+    def _newline(self):
+        self.cursor_x = 0
+        self.cursor_y += 1
+        if self.cursor_y >= C64_ROWS:
+            self.buffer.pop(0)
+            self.buffer.append([" "] * C64_COLS)
+            self.cursor_y = C64_ROWS - 1
+
+    def _glyph_for_char(self, char):
+        code = ord(char) if char else ord("?")
+        return self.glyphs.get(code, self.default_glyph)
+
+    def process_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit(0)
+
+    def write(self, text):
+        for ch in text:
+            if ch == "\n":
+                self._newline()
+                continue
+            if ch == "\f":
+                self.clear()
+                continue
+            sanitized = ch
+            if not sanitized.isprintable() or sanitized == "\r":
+                sanitized = " "
+            sanitized = sanitized.upper()
+            self.buffer[self.cursor_y][self.cursor_x] = sanitized
+            self.cursor_x += 1
+            if self.cursor_x >= C64_COLS:
+                self._newline()
+
+    def _draw_buffer(self):
+        self.logical_surface.fill(C64_BLUE)
+        for y, row in enumerate(self.buffer):
+            for x, ch in enumerate(row):
+                glyph = self._glyph_for_char(ch)
+                self.logical_surface.blit(glyph, (x * C64_CELL_SIZE, y * C64_CELL_SIZE))
+
+    def render_frame(self):
+        self._draw_buffer()
+        frame = self.logical_surface.copy()
+        if self.enable_scanlines:
+            frame.blit(self.scanline_overlay, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+        if self.enable_blur:
+            downscaled = pygame.transform.scale(
+                frame, (int(LOGICAL_WIDTH * 0.9), int(LOGICAL_HEIGHT * 0.9))
+            )
+            frame = pygame.transform.scale(downscaled, (LOGICAL_WIDTH, LOGICAL_HEIGHT))
+
+        scaled = pygame.transform.scale(
+            frame, (LOGICAL_WIDTH * self.scale, LOGICAL_HEIGHT * self.scale)
+        ).convert_alpha()
+        if self.enable_flicker:
+            flicker = random.uniform(-0.02, 0.02)
+            if flicker != 0:
+                overlay = pygame.Surface(scaled.get_size(), pygame.SRCALPHA)
+                if flicker > 0:
+                    overlay.fill((*C64_WHITE, int(255 * flicker)))
+                    scaled.blit(overlay, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+                else:
+                    overlay.fill((*C64_BLACK, int(255 * abs(flicker))))
+                    scaled.blit(overlay, (0, 0), special_flags=pygame.BLEND_RGBA_SUB)
+
+        self.window.fill(C64_BLUE)
+        self.window.blit(scaled, (0, 0))
+        pygame.display.flip()
+        self.clock.tick(self.fps)
+
 # official Amiga solution
 plundered_hearts_commands = [
     "stand up", "inventory", "examine smelling salts", "read tag", "examine banknote",
@@ -149,10 +801,22 @@ There was a divide within Infocom regarding whether interactive fiction protagon
 from pexpect.popen_spawn import PopenSpawn
 child = PopenSpawn("frotz -p roms/PLUNDERE.z3", encoding='utf-8', timeout=5)
 
+renderer = None
+if ENABLE_C64_RENDERER:
+    try:
+        renderer = C64Renderer(font_path=C64_FONT_PATH, fps=50)
+    except Exception as exc:
+        print(f"Unable to start C64 renderer: {exc}")
+        renderer = None
+
 
 # Catch the intro message
 child.expect("Press RETURN or ENTER to begin")
-print(child.before)
+intro_text = clean_output(child.before)
+print(intro_text)
+if renderer and intro_text:
+    renderer.write(intro_text + "\n")
+    renderer.render_frame()
 
 # Answer the intro message by pressing "enter"
 child.sendline("")
@@ -169,13 +833,20 @@ for _ in range(50):  # max itérations (sécurité)
         break
 # print(child.before)
 print("\n")
+initial_clean = clean_output(buffer)
+if renderer and initial_clean:
+    renderer.write(initial_clean + "\n")
+    renderer.render_frame()
 
-prev_output = ""
+prev_output = initial_clean or ""
 cmd_index = 0
 prev_cmd = None
 
 # automated walkthrough
 while True : # for step, cmd in enumerate(plundered_hearts_commands):
+    if renderer:
+        renderer.process_events()
+
     cmd = plundered_hearts_commands[cmd_index]
 
     if ENABLE_LLM:
@@ -214,7 +885,11 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
         if ENABLE_READING_PAUSE:
             time.sleep(estimate_reading_time(ai_thinking))
 
-    print("> " + cmd.strip() + "\n")
+    display_cmd = "> " + cmd.strip()
+    print(display_cmd + "\n")
+    if renderer:
+        renderer.write(display_cmd + "\n")
+        renderer.render_frame()
     child.sendline(" " + cmd)
     prev_output = ""
     prev_cmd = cmd
@@ -225,6 +900,8 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
     timeout_seconds = 4  # How long do we wait for the output to finish ?
     while time.time() - start_time < timeout_seconds:
         try:
+            if renderer:
+                renderer.process_events()
             chunk = child.read_nonblocking(size=1024, timeout=0.3)
             buffer += chunk
 
@@ -240,6 +917,10 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
 
     cleaned = clean_output(buffer)
     print(cleaned)
+    if renderer:
+        if cleaned:
+            renderer.write(cleaned + "\n")
+        renderer.render_frame()
     prev_output = cleaned
 
     if ENABLE_READING_PAUSE:
