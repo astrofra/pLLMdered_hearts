@@ -41,6 +41,7 @@ C64_BORDER_COLOR = C64_BLUE
 BORDER_THICKNESS = 64
 
 C64_FONT_PATH = None  # Using built-in fallback font; no external sprite sheet required.
+KEY_AUDIO_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "audio")
 
 def llm_response_is_valid(llm_commentary):
     if llm_commentary is None:
@@ -117,6 +118,34 @@ def clean_output(text):
             continue
         clean_lines.append(line)
     return '\n'.join(clean_lines).strip()
+
+_KEY_SOUNDS = []
+_MIXER_READY = False
+
+
+def _ensure_key_sounds_loaded():
+    """Lazy-load key click sounds from assets/audio/*.ogg."""
+    global _KEY_SOUNDS, _MIXER_READY
+    if _MIXER_READY:
+        return
+    if not pygame:
+        return
+    try:
+        if not pygame.mixer.get_init():
+            pygame.mixer.init(frequency=44100, size=-16, channels=1, buffer=256)
+        if not os.path.isdir(KEY_AUDIO_DIR):
+            return
+        oggs = [f for f in os.listdir(KEY_AUDIO_DIR) if f.lower().endswith(".ogg")]
+        oggs.sort()
+        for fname in oggs:
+            try:
+                sound = pygame.mixer.Sound(os.path.join(KEY_AUDIO_DIR, fname))
+                _KEY_SOUNDS.append(sound)
+            except Exception:
+                continue
+        _MIXER_READY = True
+    except Exception:
+        _MIXER_READY = False
 
 class C64Renderer:
     def __init__(
@@ -812,14 +841,24 @@ class C64Renderer:
         self.clock.tick(self.fps)
 
 
-def _play_key_beep():
-    """Lightweight key click using the terminal bell."""
-    if ENABLE_KEYCLICK_BEEP:
+def _play_key_beep(ch=" "):
+    """Play a key click sound mapped from ASCII; fallback to terminal bell."""
+    if not ENABLE_KEYCLICK_BEEP:
+        return
+    _ensure_key_sounds_loaded()
+    if _KEY_SOUNDS:
         try:
-            sys.stdout.write("\a")
-            sys.stdout.flush()
+            idx = ord(ch) % len(_KEY_SOUNDS)
+            _KEY_SOUNDS[idx].play()
+            return
         except Exception:
             pass
+    # Fallback: terminal bell
+    try:
+        sys.stdout.write("\a")
+        sys.stdout.flush()
+    except Exception:
+        pass
 
 
 def type_to_renderer(renderer, text, base_delay=0.01, min_delay=0.005, max_delay=0.12):
@@ -835,7 +874,7 @@ def type_to_renderer(renderer, text, base_delay=0.01, min_delay=0.005, max_delay
         renderer.render_frame()
         distance = abs(ord(ch) - ord(prev))
         delay = max(min_delay, min(max_delay, distance * base_delay))
-        _play_key_beep()
+        _play_key_beep(ch)
         time.sleep(delay)
         prev = ch
 
