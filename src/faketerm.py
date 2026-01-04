@@ -9,7 +9,7 @@ import json
 
 ## FIXME "[Press RETURN or ENTER to continue.]"
 
-ENABLE_LLM = False
+ENABLE_LLM = True
 ENABLE_READING_PAUSE = False
 
 def llm_response_is_valid(llm_commentary):
