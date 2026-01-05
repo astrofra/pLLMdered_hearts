@@ -694,6 +694,11 @@ class C64Renderer:
     def _draw_status_bar(self):
         if not self.status_text:
             return
+        pygame.draw.rect(
+            self.logical_surface,
+            C64_LIGHT_BLUE,
+            pygame.Rect(0, 0, LOGICAL_WIDTH, C64_CELL_SIZE_V),
+        )
         truncated = self.status_text[:C64_COLS].ljust(C64_COLS)
         for x, ch in enumerate(truncated):
             glyph = self._glyph_for_char(ch)
