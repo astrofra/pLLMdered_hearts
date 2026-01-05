@@ -16,6 +16,7 @@ from c64renderer import C64Renderer
 
 ## FIXME "[Press RETURN or ENTER to continue.]"
 
+LLM_MODEL = 'ministral-3:14b'
 ENABLE_LLM = True
 ENABLE_READING_PAUSE = True
 ENABLE_C64_RENDERER = True
@@ -100,6 +101,8 @@ def clean_output(text):
         stripped = line.strip()
         if status_bar_re.search(stripped):
             LAST_STATUS_BAR = stripped
+            if "Plundered Hearts" in LAST_STATUS_BAR:
+                LAST_STATUS_BAR = LAST_STATUS_BAR.replace("Plundered Hearts", "PLLMDERED_HEARTS")
             continue
         if stripped.isdigit():
             continue
@@ -341,7 +344,7 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
         retry = 0
         while llm_commentary is None: # llm_commentary is None or not("comment" in llm_commentary) or not("command" in llm_commentary):
             response = ollama.chat(
-                model= 'ministral-3:14b', # , 'qwen3:8b', # 'gpt-oss:20b', # 'llama3:8b', # model = 'deepseek-r1:7b',
+                model= LLM_MODEL, # , 'qwen3:8b', # 'gpt-oss:20b', # 'llama3:8b', # model = 'deepseek-r1:7b',
                 messages=[{
                     'role': 'user',
                     'content': prompt
