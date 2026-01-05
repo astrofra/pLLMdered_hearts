@@ -308,7 +308,7 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
             if not chunk:
                 break
             raw_output += chunk
-            if "***MORE***" in raw_output:
+            if "***MORE***" in raw_output or  "[Press RETURN or ENTER to continue.]" in raw_output:
                 raw_output = raw_output.replace("***MORE***", "")
                 child.sendline("")
                 continue
