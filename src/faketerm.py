@@ -149,17 +149,32 @@ def _play_key_beep(ch=" "):
         pass
 
 
-def type_to_renderer(renderer, text, base_delay=0.015, min_delay=0.075, max_delay=0.20, beep=True):
+def type_to_renderer(
+    renderer,
+    text,
+    base_delay=0.015,
+    min_delay=0.075,
+    max_delay=0.20,
+    beep=True,
+    word_mode=False,
+):
     """
     Simulate typing to the renderer: emit characters one by one with a delay
     proportional to ASCII distance from the previous character.
     """
-    if not renderer:
+    if not renderer or text is None:
         return
     prev = " "
-    for ch in text:
-        renderer.write(ch)
+    chunks = re.findall(r"\n|\S+\s*|\s+", text) if word_mode else list(text)
+    for chunk in chunks:
+        if not chunk:
+            continue
+        renderer.write(chunk)
         renderer.render_frame()
+        # Use the last non-newline character of the chunk to keep delays consistent.
+        ch = next((c for c in reversed(chunk) if c not in "\r\n"), " ")
+        if not ch.strip():
+            ch = " "
         distance = abs(ord(ch) - ord(prev))
         delay = max(min_delay, min(max_delay, distance * base_delay))
         if beep:
@@ -351,6 +366,7 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
                 min_delay=1 / 240.0,
                 max_delay=1 / 240.0,
                 beep=False,
+                word_mode=True,
             )
         else:
             renderer.render_frame()

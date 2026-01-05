@@ -1,3 +1,6 @@
+import random
+import sys
+
 import pygame
 
 # Commodore 64 style display settings
