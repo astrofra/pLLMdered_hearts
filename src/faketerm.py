@@ -177,9 +177,10 @@ def type_to_renderer(
             ch = " "
         distance = abs(ord(ch) - ord(prev))
         delay = max(min_delay, min(max_delay, distance * base_delay))
-        if beep:
+        if beep and chunk not in ["\n", " ", ">"]:
             _play_key_beep(ch)
-        time.sleep(delay)
+        if chunk not in ["\n", ">"]:
+            time.sleep(delay)
         prev = ch
 
 # official Amiga solution
