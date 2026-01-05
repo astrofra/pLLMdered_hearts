@@ -24,6 +24,7 @@ ENABLE_KEYCLICK_BEEP = True
 
 C64_FONT_PATH = None  # Using built-in fallback font; no external sprite sheet required.
 KEY_AUDIO_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "audio")
+LLM_OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "llm_out")
 
 def llm_response_is_valid(llm_commentary):
     if llm_commentary is None:
@@ -205,6 +206,23 @@ def type_to_renderer(
         prev = ch
 
 
+def write_llm_markdown(text):
+    """Persist LLM commentary as a timestamped markdown file in llm_out/."""
+    if text is None:
+        return None
+    try:
+        os.makedirs(LLM_OUT_DIR, exist_ok=True)
+        timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+        filename = f"{timestamp}.md"
+        path = os.path.join(LLM_OUT_DIR, filename)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+        return path
+    except Exception as exc:
+        print(f"Failed to write LLM output: {exc}")
+        return None
+
+
 def build_prompt(prev_output, next_cmd):
     prompt = "You are playing Pludered Hearts, a text interactive fiction by Amy Briggs."
     prompt = prompt + "Here is what Wikipedia says about this game : "
@@ -372,6 +390,7 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                 retry = retry + 1
             ai_thinking = llm_commentary + "\n"
             print("<AI thinks : '" + ai_thinking + "'>\n")
+            write_llm_markdown(llm_commentary)
             if ENABLE_READING_PAUSE:
                 time.sleep(estimate_reading_time(ai_thinking))
 
