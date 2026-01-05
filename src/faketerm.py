@@ -17,7 +17,7 @@ from c64renderer import C64Renderer
 ## FIXME "[Press RETURN or ENTER to continue.]"
 
 ENABLE_LLM = False
-ENABLE_READING_PAUSE = False
+ENABLE_READING_PAUSE = True
 ENABLE_C64_RENDERER = True
 ENABLE_KEYCLICK_BEEP = True
 
@@ -327,7 +327,7 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
         if ENABLE_READING_PAUSE:
             time.sleep(estimate_reading_time(ai_thinking))
 
-    display_cmd = "> " + cmd.strip()
+    display_cmd = ">> " + cmd.strip()
     print(display_cmd + "\n")
     if renderer:
         type_to_renderer(renderer, "\n" + display_cmd + "\n", beep=True)
@@ -362,9 +362,9 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
             type_to_renderer(
                 renderer,
                 cleaned + "\n",
-                base_delay=1 / 240.0,
+                base_delay=1 / 60.0,
                 min_delay=1 / 240.0,
-                max_delay=1 / 240.0,
+                max_delay=1 / 30.0,
                 beep=False,
                 word_mode=True,
             )
@@ -374,6 +374,6 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
     prev_output = cleaned
 
     if ENABLE_READING_PAUSE:
-        time.sleep(0.3)  # artificially wait to allow reading
+        time.sleep(1.0)  # artificially wait to allow reading
 
     cmd_index = cmd_index + 1
