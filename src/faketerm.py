@@ -1,22 +1,31 @@
+import json
 import os
-os.environ["OLLAMA_NO_CUDA"] = "1"
+import random
+import re
+import sys
+import time
 
 import ollama
 import pexpect
-import time
-import re
-import json
 
-def json_command_is_valid(json_command):
-    if json_command is None:
-        return False
-    if not("comment" in json_command):
-        return False
-    if not("command" in json_command):
-        return False
-    if not isinstance(json_command["comment"], str):
-        return False
-    if not isinstance(json_command["command"], str):
+import pygame
+
+from c64renderer import C64Renderer
+
+# os.environ["OLLAMA_NO_CUDA"] = "1"
+
+## FIXME "[Press RETURN or ENTER to continue.]"
+
+ENABLE_LLM = False
+ENABLE_READING_PAUSE = True
+ENABLE_C64_RENDERER = True
+ENABLE_KEYCLICK_BEEP = True
+
+C64_FONT_PATH = None  # Using built-in fallback font; no external sprite sheet required.
+KEY_AUDIO_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "audio")
+
+def llm_response_is_valid(llm_commentary):
+    if llm_commentary is None:
         return False
     
     return True
@@ -32,6 +41,10 @@ def extract_and_parse_json(text):
     Extracts the first JSON object found inside triple backticks or code-like blocks from the input text,
     and returns it as a Python dictionary.
     """
+
+    stop_strings = ["```json", "```", "\n"]
+    for _stop in stop_strings:
+        text = text.replace(_stop, '')
 
     # Try to find JSON inside ```json ... ``` blocks
     match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
@@ -50,19 +63,21 @@ def extract_and_parse_json(text):
         print("No JSON block found.")
         return None
 
-import re
-
 # Match ANSI escape sequences like ESC[31m or ESC[2J
 ansi_escape = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
 # Match cursor position commands like [24d (often without ESC, incomplete sequences)
 cursor_directives = re.compile(r'\[\d{1,3}d')
 # Match charset switch like ESC(A or ESC(B
 charset_switch = re.compile(r'\x1b\([A-B]')
+# Match title/score bar lines that contain score and moves.
+status_bar_re = re.compile(r".*Score:\s*\d+.*Moves:\s*\d+", re.IGNORECASE)
+LAST_STATUS_BAR = ""
 
 # Escape sequences that usually correspond to "clear screen", "move cursor", etc.
 line_breaking_escapes = re.compile(r'\x1b\[[0-9;]*([HJfABCD])')
 
 def clean_output(text):
+    global LAST_STATUS_BAR
     # Replace certain ANSI codes with newlines (those likely to imply line moves)
     def replace_with_newline(match):
         command = match.group(1)
@@ -78,16 +93,113 @@ def clean_output(text):
     # Remove remaining ANSI escape codes
     text = ansi_escape.sub('', text)
 
-    # Remove lines containing only a number (like score or parser noise)
+    # Remove status/title bar and lines containing only a number (like score or parser noise)
     lines = text.strip().splitlines()
-    lines = [line for line in lines if not line.strip().isdigit()]
+    filtered = []
+    for line in lines:
+        stripped = line.strip()
+        if status_bar_re.search(stripped):
+            LAST_STATUS_BAR = stripped
+            continue
+        if stripped.isdigit():
+            continue
+        filtered.append(line)
     # Remove repeated empty lines
     clean_lines = []
-    for i, line in enumerate(lines):
-        if line.strip() == '' and (i == 0 or lines[i - 1].strip() == ''):
+    for i, line in enumerate(filtered):
+        if line.strip() == '' and (i == 0 or filtered[i - 1].strip() == ''):
             continue
         clean_lines.append(line)
     return '\n'.join(clean_lines).strip()
+
+_KEY_SOUNDS = []
+_MIXER_READY = False
+
+
+def _ensure_key_sounds_loaded():
+    """Lazy-load key click sounds from assets/audio/*.ogg."""
+    global _KEY_SOUNDS, _MIXER_READY
+    if _MIXER_READY:
+        return
+    if not pygame:
+        return
+    try:
+        if not pygame.mixer.get_init():
+            pygame.mixer.init(frequency=44100, size=-16, channels=1, buffer=256)
+        if not os.path.isdir(KEY_AUDIO_DIR):
+            return
+        oggs = [f for f in os.listdir(KEY_AUDIO_DIR) if f.lower().endswith(".ogg")]
+        oggs.sort()
+        for fname in oggs:
+            try:
+                sound = pygame.mixer.Sound(os.path.join(KEY_AUDIO_DIR, fname))
+                _KEY_SOUNDS.append(sound)
+            except Exception:
+                continue
+        _MIXER_READY = True
+    except Exception:
+        _MIXER_READY = False
+
+
+def _play_key_beep(ch=" "):
+    """Play a key click sound mapped from ASCII; fallback to terminal bell."""
+    if not ENABLE_KEYCLICK_BEEP:
+        return
+    _ensure_key_sounds_loaded()
+    if _KEY_SOUNDS:
+        try:
+            idx = ord(ch) % len(_KEY_SOUNDS)
+            _KEY_SOUNDS[idx].play()
+            return
+        except Exception:
+            pass
+    # Fallback: terminal bell
+    try:
+        sys.stdout.write("\a")
+        sys.stdout.flush()
+    except Exception:
+        pass
+
+
+def type_to_renderer(
+    renderer,
+    text,
+    base_delay=0.015,
+    min_delay=0.075,
+    max_delay=0.20,
+    beep=True,
+    word_mode=False,
+):
+    """
+    Simulate typing to the renderer: emit characters one by one with a delay
+    proportional to ASCII distance from the previous character.
+    """
+    if not renderer or text is None:
+        return
+    prev = " "
+    chunks = re.findall(r"\n|\S+\s*|\s+", text) if word_mode else list(text)
+    # Show cursor ahead of each chunk, and keep it after each chunk except the final one.
+    total_chunks = len([c for c in chunks if c])
+    typed = 0
+    for chunk in chunks:
+        if not chunk:
+            continue
+        if renderer:
+            renderer.render_frame(show_cursor=True)
+        renderer.write(chunk)
+        typed += 1
+        renderer.render_frame(show_cursor=typed < total_chunks)
+        # Use the last non-newline character of the chunk to keep delays consistent.
+        ch = next((c for c in reversed(chunk) if c not in "\r\n"), " ")
+        if not ch.strip():
+            ch = " "
+        distance = abs(ord(ch) - ord(prev))
+        delay = max(min_delay, min(max_delay, distance * base_delay))
+        if beep and chunk not in ["\n", " ", ">"]:
+            _play_key_beep(ch)
+        if chunk not in ["\n", ">"]:
+            time.sleep(delay)
+        prev = ch
 
 # official Amiga solution
 plundered_hearts_commands = [
@@ -127,71 +239,6 @@ plundered_hearts_commands = [
     "fire pistol at crulley"
 ]
 
-plundered_hearts_solution = "Start in the ship's cabin.\
-STAND  UP  -  (you  get out of bed) - INVENTORY - (you find that you have a\
-reticule  containing  smelling  salts  and  a bank note) - EXAMINE SMELLING\
-SALTS - READ TAG - EXAMINE BANKNOTE - (the ship lurches and a coffer slides\
-out  from  under the bed) - EXAMINE COFFER - EXAMINE DOOR - OPEN DOOR - Z -\
-(Crulley  bursts  in!)  -  SCREAM  -  E - (Crulley stops you but the Falcon\
-enters  and  clouts  him!)  -  EXAMINE  FALCON - (he eventually hands you a\
-missive)  -  READ MISSIVE - (he offers you protection) - FALCON, YES - (you\
-are now on the Deck).\
-\
-EXAMINE  DAVIS  - (you are taken to the Captain's Quarters.........two days\
-pass by) - EXAMINE RING - EXAMINE FALCON - Z - Z - STAND UP - LOOK AROUND -\
-LOOK  THROUGH  WINDOW  -  OPEN CURTAIN - EXAMINE CUPBOARD - EXAMINE TABLE -\
-EXAMINE  BED  - Z - (Captain Jamison gives you a brooch) - EXAMINE BROOCH -\
-OPEN  COFFER - TAKE INVITATION - READ INVITATION - N - (you squeeze through\
-to the Landing) - DOWN - N - EXAMINE GATE - N - TAKE BOTTLE - TAKE MIRROR -\
-EXAMINE BOTTLE - READ LABEL - S - S - UP - OPEN DOOR - ENTER - TAKE CLOTHES\
-- REMOVE DRESS - WEAR BREECHES - WEAR SHIRT - Z - OUT.\
-\
-S  - TAKE COFFER - Z - THROW COFFER THROUGH WINDOW - SIT ON LEDGE - PUT ALL\
-IN  RETICULE - TAKE LADDER - (you now hang on the ladder!) - UP - UP - UP -\
-UP - (you land on the Poop Deck) - N - N - N - EXAMINE WINCH - READ LEVER -\
-PULL LEVER UP - (you lower the anchor) - S - EXAMINE BARRELS - TEAR DRESS -\
-PUT RAG IN WATER - OPEN HATCH - DOWN - THROW RAG OVER GATE - (you douse the\
-burning  fuse) - UP - S - EXAMINE CASKS - N - N - ENTER SHACK - TAKE DAGGER\
--  E  - S - S - LOOK IN CASK - ENTER CASK - TAKE PORK - PUT ALL IN RETICULE\
-EXCEPT  DAGGER  - CUT ROPE - (you release the cask into the sea!) - EXAMINE\
-PORK - Z - Z - Z - (you eventually drift to some shallows near an Island).\
-\
-LEAVE CASK - EXAMINE SKIFF - W - N - E - PULL SLAT - (Captain Jamison finds\
-you!)  - Z - Z - (he asks to kiss you) - FALCON, YES - (now, now.......it's\
-only  a  game  fellas!!)  - Z - (he now leaves) - E - N - OPEN WINDOW - W -\
-EXAMINE  PORTRAIT  -  EXAMINE BOOKSHELVES - EXAMINE GLOBE - TAKE HAT - (you\
-feel a vibration from the floor!.......ooer!!) - S - (the Butler now throws\
-you out!!) - W - E - EXAMINE LUCY - TAKE GARTER - W - S - NE - CLIMB VINE -\
-(to a Bedroom).\
-\
-REMOVE  CLOTHES - WEAR BALL GOWN - TAKE INVITATION - PUT GARTER IN RETICULE\
--  N  -  N  -  TAKE  PISTOLS  -  (out  of reach!) - S - E - E - OPEN DOOR -\
-(locked!)  - S - N - W - DOWN - GIVE INVITATION - (to Butler) - S - DANCE -\
-DANCE  - DANCE - DANCE - W - EXAMINE ORCHESTRA - E - DANCE - EXAMINE LAFOND\
--  EXAMINE RING - OPEN DOOR - S - N - N - E - (the Butler stops you!) - S -\
-E  -  N - (under the table) - N - TAKE TREATISE - TAKE HAT - PRESS SINISTRA\
-ON GLOBE - (the portrait opens!) - N - DOWN - E - E - TAKE KEY AND HORN.\
-\
-W  -  S  - OPEN DOOR - E - W - N - W - S - (you see a crocodile!) - SQUEEZE\
-BOTTLE  ON  PORK - THROW PORK AT CROCODILE - Z - Z - (it sleeps!) - S - W -\
-UNLOCK  DOOR - (with large key) - OPEN DOOR - N - GIVE GARTER TO PAPA - Z -\
-S - E - N - N - UP - S - S - (Captain Jamison is being arrested!) - N - N -\
-S - S - S - N - N - S - UP - E - KNOCK ON DOOR - OPEN DOOR - N - DRINK WINE\
--  POUR  WINE  INTO  GREEN GOBLET - SQUEEZE BOTTLE INTO GREEN GOBLET - POUR\
-WINE  INTO BLUE GOBLET - Z - (Lafond asks you if the green goblet is his) -\
-LAFOND, NO - (he takes the green goblet!) - DRINK WINE - TAKE SPICE - THROW\
-SPICE AT LAFOND - WAVE MIRROR AT WINDOW - (to signal the Helena Louise).\
-\
-S  -  (the  Butler  is  sound  asleep!) - W - DOWN - S - Z - (Jamison's men\
-enter!)  -  COOKIE,  YES  -  N  -  E - N - TAKE TREATISE - TAKE HAT - PRESS\
-SINISTRA  -  N  -  DOWN - S - (Cookie deals with the crocodile!) - S - TAKE\
-RAPIER  -  KILL CRULLEY - G - CLOSE TRAPDOOR - PICK LOCK - (with the brooch\
-clasp)  -  WAVE  SMELLING SALTS - N - N - Z - UP - S - S - W - UP - E - S -\
-UNTIE  ROPE - CLIMB DOWN ROPE - (you crash into Lafond!!) - (you eventually\
-end  up  back in the Ballroom) - TAKE HORN - S - S - S - LOOK AT NICHOLAS -\
-PUSH  NICHOLAS - NICHOLAS, YES - TAKE PISTOL - LOAD PISTOL - FIRE PISTOL AT\
-CRULLEY............to complete the adventure!!!!!!!!"
-
 # wikipedia article about Plundered Hearts
 plundered_hearts_wiki = """Plundered Hearts is an interactive fiction video game created by Amy Briggs and published by Infocom in 1987. Infocom's only game in the romance genre, it was released simultaneously for the Apple II, Commodore 64, Atari 8-bit computers, Atari ST, Amiga, Mac, and MS-DOS. It is Infocom's 28th game.
 Plundered Hearts casts the player in a well-defined role. The lead character is a young woman in the late 17th century who has received a letter. Jean Lafond, the governor of the small West Indies island of St. Sinistra, says that the player's father has contracted a wasting tropical disease. Lafond suggests that his recovery would be greatly helped by the loving presence of his daughter, and sends his ship (the Lafond Deux) to transport her.
@@ -204,61 +251,44 @@ The Plundered Hearts package included an elegant velvet reticule (pouch) contain
 Game reviewers complimented Plundered Hearts for its gripping prose, challenging predicaments, and scenes of derring-do. Other publications said it was a good introduction to interactive fiction, with writing suitable for both men and women. Some noted that the genre might have alienated Infocom's typical audience, but praised its bold direction nonetheless.
 """
 
-plundered_hearts_user_manual = """Communicating with Infocom's Interactive Fiction
-In Plundered Hearts, you type your commands in plain English each time you see the prompt (>). Plundered
-Hearts usually acts as if your commands begin with "I want to...," although you shouldn't actually type those
-words. You can use words like THE if you want, and you can use capital letters if you want; Plundered Hearts
-doesn't care either way.
-When you have finished typing a command, press the RETURN (or ENTER) key. Plundered Hearts will then
-respond, telling you whether your request is possible at this point in the story, and what happened as a result.
-Plundered Hearts recognizes your words by their first six letters, and all subsequent letters are ignored.
-Therefore, CANDLE, CANDLEs, and CANDLEstick would all be treated as the same word by Plundered Hearts.
-To move around, just type the direction you want to go. Directions can be abbreviated: NORTH to N, SOUTH to
-S, EAST to E, WEST to W, NORTHEAST to NE, NORTHWEST to NW, SOUTHEAST to SE, SOUTHWEST to
-SW, UP to U, and DOWN to D. Remember that IN and OUT will also work in certain places. Aboard a ship, you
-can use the directions FORE (or F), AFT, PORT (or P), and STARBOARD (or SB).
-Plundered Hearts understands many different kinds of sentences. Here are several examples. (Note some of these
-do not actually appear in Plundered Hearts.)
->WALK NORTH
->DOWN
->NE
->GO AFT
->TAKE THE RED CANDLE
->READ THE SIGN
->LOOK UNDER THE BED
->OPEN THE HATCH
->DANCE WITH WILLIAM
->CLIMB THE LADDER
->PRESS THE GREEN BUTTON
->EXAMINE THE RAPIER
->SWING ON THE ROPE
->PUT ON THE PETTICOAT
->WEAR THE TIARA
->KNOCK ON THE DOOR
->SHOOT THE PEBBLE WITH THE SLINGSHOT
->UNLOCK THE BOX WITH THE KEY
->CUT THE ROPE WITH THE SCISSORS
->PUT THE COLLAR ON THE DOG
->THROW THE GOBLET OUT THE WINDOW
-You can use multiple objects with certain verbs if you separate them by the word AND or by a comma. Some
-examples:
->TAKE BOOK AND KNIFE
->DROP THE HOOPS, THE BRACELET AND THE TRAY
->PUT THE PEARL AND THE SHELL IN THE BOX
-You can include several sentences on one input line if you separate them by the word THEN or by a period.
-(Note that each sentence will still count as a turn.) You don't need a period at the end of the input line. For example,
-you could type all of the following at once, before pressing the RETURN (or ENTER) key:
->READ THE SIGN. GO NORTH THEN DROP THE STONE AND MAP"""
+plundered_hearts_fandom = """
+You play Lady Dimsford, a young, aristocratic woman in the 17th century. She receives a letter from Jean Lafond, the governor of an island in the West Indies, informing her that her father is dying of a tropical disease. Lafond sends a ship to bring her to his island. The ship is then intercepted by notorious pirate Captain Jamison. However, it turns out that Lafond has kidnapped Lady Dimsford's father for his own purposes. The Lady and the pirate work together to defeat him.
+The game can be played to completion with four potential endings. However, in only one ending do all of the Lady's loved ones survive. If another ending is arrived at, the user is informed that "There are other, perhaps more satisfying, conclusions."
+There was a divide within Infocom regarding whether interactive fiction protagonists should be "audience stand-ins", or whether they should have defined characters. For instance, after negative reaction to the anti-hero protagonist of Infidel, implementor Michael Berlyn concluded that "People really don’t want to know who they are [in a game]." Plundered Hearts falls on the opposite side of the spectrum. Lady Dimsford's capable and spunky personality subverts the game's "damsel in distress" setup.
+"""
 
 # run frotz through a terminal emulator, using the ascii mode
 # child = pexpect.spawn("frotz -p roms/PLUNDERE.z3", encoding='utf-8', timeout=5)
 from pexpect.popen_spawn import PopenSpawn
 child = PopenSpawn("frotz -p roms/PLUNDERE.z3", encoding='utf-8', timeout=5)
 
+renderer = None
+if ENABLE_C64_RENDERER:
+    try:
+        renderer = C64Renderer(font_path=C64_FONT_PATH, fps=50)
+    except Exception as exc:
+        print(f"Unable to start C64 renderer: {exc}")
+        renderer = None
+
 
 # Catch the intro message
 child.expect("Press RETURN or ENTER to begin")
-print(child.before)
+intro_text = clean_output(child.before)
+if renderer and LAST_STATUS_BAR:
+    renderer.set_status_bar(LAST_STATUS_BAR)
+print(intro_text)
+if renderer and intro_text:
+    # renderer.write(intro_text + "\n")
+    # renderer.render_frame()
+    type_to_renderer(
+        renderer,
+        intro_text + "\n",
+        base_delay=1 / 60.0,
+        min_delay=1 / 240.0,
+        max_delay=1 / 30.0,
+        beep=False,
+        word_mode=True,
+    )
 
 # Answer the intro message by pressing "enter"
 child.sendline("")
@@ -275,85 +305,109 @@ for _ in range(50):  # max itérations (sécurité)
         break
 # print(child.before)
 print("\n")
+initial_clean = clean_output(buffer)
+if renderer and LAST_STATUS_BAR:
+    renderer.set_status_bar(LAST_STATUS_BAR)
+if renderer and initial_clean:
+    renderer.write(initial_clean + "\n")
+    renderer.render_frame()
 
-prev_output = ""
+prev_output = initial_clean or ""
 cmd_index = 0
 prev_cmd = None
 
 # automated walkthrough
 while True : # for step, cmd in enumerate(plundered_hearts_commands):
+    if renderer:
+        renderer.process_events()
+
     cmd = plundered_hearts_commands[cmd_index]
 
-    prompt = "You are playing Pludered Hearts, a text interactive fiction by Amy Briggs."
-    prompt = prompt + "Here is what Wikipedia says about this game : "
-    prompt = prompt + plundered_hearts_wiki
-    prompt = prompt + """
-You are an intelligent assistant who suggests the next action to take in the game.
-Important: You are playing a classic text adventure with a strict command parser. Your commands must follow one of these patterns:
-- VERB (e.g. LOOK AROUND, INVENTORY, NORTH, N, S, W, E)
-- VERB + OBJECT (e.g. EXAMINE BED, TAKE PISTOL, OPEN DOOR)
-- VERB + OBJECT + COMPLEMENT (e.g. UNLOCK DOOR WITH KEY, FIRE PISTOL AT CRULLEY)
-- Optionally: two simple actions joined by AND or THEN (e.g. TAKE HORN AND BLOW IT)
-"""
-    prompt = prompt + "Here is the user manual regarding the parser commands : "
-    prompt = prompt + plundered_hearts_user_manual
-    prompt = prompt + "Here is the latest output from the game : "
-    prompt = prompt + prev_output
-    if prev_cmd is not None:
-        prompt = prompt + "Your previous command was : '" + prev_cmd + "'."
-    prompt = prompt + "From the known solution of the game, you know the next good command will be : " + cmd
-    # prompt = prompt + "Here is the known solution for the game but please don't jump to the end directly : "
-    # prompt = prompt + plundered_hearts_solution
-    prompt = prompt + "Please provide a JSON with one key :"
-    prompt = prompt + " - 'comment' key to give a detailled feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, then explain, IN FRENCH ARGOT, FIRST PERSON, what to do and why this is the best thing in this context."
-    prompt = prompt + " - 'command' key that will describe out loud, in a familiar or slang-ish way, IN FRENCH ARGOT, FIRST PERSON, the command in itself, put in context."
-    # prompt = prompt + " - 'prompt' key that will only contain the command that you suggest given all the context you have at hand."
-    prompt = prompt + "When thinking out loud, you refer yourself (and yourself only) as 'meuf' or 'frère'"
-    json_command = None
+    if ENABLE_LLM:
+        prompt = "You are playing Pludered Hearts, a text interactive fiction by Amy Briggs."
+        prompt = prompt + "Here is what Wikipedia says about this game : "
+        prompt = prompt + plundered_hearts_wiki
+        prompt = prompt + plundered_hearts_fandom
 
-    retry = 0
-    while not json_command_is_valid(json_command): # json_command is None or not("comment" in json_command) or not("command" in json_command):
-        response = ollama.chat(
-            model='llama3:8b',
-            # model = 'deepseek-r1:7b',
-            messages=[{
-                'role': 'user',
-                'content': prompt
-                }]
-        )
-        # print(response.message.content)
-        json_command = extract_and_parse_json(response.message.content)
-        if retry > 0:
-            print("Retry #" + str(retry))
-        retry = retry + 1
+        prompt = prompt + "Here is the latest output from the game : "
+        prompt = prompt + prev_output
 
-    # print("\n")
-    ai_thinking = json_command["comment"] + "\n" + json_command["command"]
-    print("<AI thinks : '" + ai_thinking + "'>\n")
-    time.sleep(estimate_reading_time(ai_thinking))
-    # command = json_command["prompt"]
-    # command = command.replace(">", "").strip().upper()
-    command = cmd.strip().upper()
-    print("> " + command.strip() + "\n")
-    child.sendline(" " + command)
+        prompt = prompt + "From the known solution of the game, you know the next good command will be : " + cmd
+        prompt = prompt + "Please o give a detailled feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, then explain, IN FRENCH ARGOT, FIRST PERSON, what to do and why this is the best thing in this context."
+        prompt = prompt + "When thinking out loud, you refer yourself (and yourself only) as 'meuf' or 'frère'"
+        llm_commentary = None
+
+        retry = 0
+        while llm_commentary is None: # llm_commentary is None or not("comment" in llm_commentary) or not("command" in llm_commentary):
+            response = ollama.chat(
+                model= 'ministral-3:14b', # , 'qwen3:8b', # 'gpt-oss:20b', # 'llama3:8b', # model = 'deepseek-r1:7b',
+                messages=[{
+                    'role': 'user',
+                    'content': prompt
+                    }]
+            )
+            # print(response.message.content)
+            llm_commentary = response.message.content # extract_and_parse_json(response.message.content)
+            if retry > 0:
+                print("Retry #" + str(retry))
+            retry = retry + 1
+
+        # print("\n")
+        ai_thinking = llm_commentary + "\n"
+        print("<AI thinks : '" + ai_thinking + "'>\n")
+
+        if ENABLE_READING_PAUSE:
+            time.sleep(estimate_reading_time(ai_thinking))
+
+    display_cmd = ">> " + cmd.strip()
+    print(display_cmd + "\n")
+    if renderer:
+        type_to_renderer(renderer, "\n" + display_cmd + "\n", beep=True)
+    child.sendline(" " + cmd)
     prev_output = ""
-    prev_cmd = command
+    prev_cmd = cmd
 
     # Flush output after command
     buffer = ""
     start_time = time.time()
-    timeout_seconds = 4  # lecture max après commande
+    timeout_seconds = 4  # How long do we wait for the output to finish ?
     while time.time() - start_time < timeout_seconds:
         try:
+            if renderer:
+                renderer.process_events()
             chunk = child.read_nonblocking(size=1024, timeout=0.3)
             buffer += chunk
+
+            # Some screens pause with "***MORE***" and wait for an ENTER key.
+            if "***MORE***" in buffer:
+                buffer = buffer.replace("***MORE***", "")
+                child.sendline("")
+                # Give the game a moment to continue output.
+                time.sleep(0.1)
+                continue
         except pexpect.exceptions.TIMEOUT:
             break
 
     cleaned = clean_output(buffer)
+    if renderer and LAST_STATUS_BAR:
+        renderer.set_status_bar(LAST_STATUS_BAR)
+    if renderer:
+        if cleaned:
+            type_to_renderer(
+                renderer,
+                cleaned + "\n",
+                base_delay=1 / 60.0,
+                min_delay=1 / 240.0,
+                max_delay=1 / 30.0,
+                beep=False,
+                word_mode=True,
+            )
+        else:
+            renderer.render_frame()
     print(cleaned)
     prev_output = cleaned
 
-    time.sleep(0.3)  # artificially wait to allow reading
+    if ENABLE_READING_PAUSE:
+        time.sleep(1.0)  # artificially wait to allow reading
 
     cmd_index = cmd_index + 1
