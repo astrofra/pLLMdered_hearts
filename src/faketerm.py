@@ -69,11 +69,15 @@ ansi_escape = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
 cursor_directives = re.compile(r'\[\d{1,3}d')
 # Match charset switch like ESC(A or ESC(B
 charset_switch = re.compile(r'\x1b\([A-B]')
+# Match title/score bar lines that contain score and moves.
+status_bar_re = re.compile(r".*Score:\s*\d+.*Moves:\s*\d+", re.IGNORECASE)
+LAST_STATUS_BAR = ""
 
 # Escape sequences that usually correspond to "clear screen", "move cursor", etc.
 line_breaking_escapes = re.compile(r'\x1b\[[0-9;]*([HJfABCD])')
 
 def clean_output(text):
+    global LAST_STATUS_BAR
     # Replace certain ANSI codes with newlines (those likely to imply line moves)
     def replace_with_newline(match):
         command = match.group(1)
@@ -89,13 +93,21 @@ def clean_output(text):
     # Remove remaining ANSI escape codes
     text = ansi_escape.sub('', text)
 
-    # Remove lines containing only a number (like score or parser noise)
+    # Remove status/title bar and lines containing only a number (like score or parser noise)
     lines = text.strip().splitlines()
-    lines = [line for line in lines if not line.strip().isdigit()]
+    filtered = []
+    for line in lines:
+        stripped = line.strip()
+        if status_bar_re.search(stripped):
+            LAST_STATUS_BAR = stripped
+            continue
+        if stripped.isdigit():
+            continue
+        filtered.append(line)
     # Remove repeated empty lines
     clean_lines = []
-    for i, line in enumerate(lines):
-        if line.strip() == '' and (i == 0 or lines[i - 1].strip() == ''):
+    for i, line in enumerate(filtered):
+        if line.strip() == '' and (i == 0 or filtered[i - 1].strip() == ''):
             continue
         clean_lines.append(line)
     return '\n'.join(clean_lines).strip()
@@ -262,6 +274,8 @@ if ENABLE_C64_RENDERER:
 # Catch the intro message
 child.expect("Press RETURN or ENTER to begin")
 intro_text = clean_output(child.before)
+if renderer and LAST_STATUS_BAR:
+    renderer.set_status_bar(LAST_STATUS_BAR)
 print(intro_text)
 if renderer and intro_text:
     # renderer.write(intro_text + "\n")
@@ -292,6 +306,8 @@ for _ in range(50):  # max itérations (sécurité)
 # print(child.before)
 print("\n")
 initial_clean = clean_output(buffer)
+if renderer and LAST_STATUS_BAR:
+    renderer.set_status_bar(LAST_STATUS_BAR)
 if renderer and initial_clean:
     renderer.write(initial_clean + "\n")
     renderer.render_frame()
@@ -373,6 +389,8 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
             break
 
     cleaned = clean_output(buffer)
+    if renderer and LAST_STATUS_BAR:
+        renderer.set_status_bar(LAST_STATUS_BAR)
     if renderer:
         if cleaned:
             type_to_renderer(

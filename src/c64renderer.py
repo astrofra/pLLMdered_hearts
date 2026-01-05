@@ -6,6 +6,7 @@ import pygame
 # Commodore 64 style display settings
 C64_COLS = 80
 C64_ROWS = 50
+C64_STATUS_ROWS = 1  # Reserve top row for status/title bar.
 C64_CELL_SIZE_H = 8
 C64_CELL_SIZE_V = 10
 LOGICAL_WIDTH = C64_COLS * C64_CELL_SIZE_H
@@ -52,8 +53,10 @@ class C64Renderer:
         self.scanline_overlay = self._build_scanline_overlay()
 
         self.cursor_x = 0
-        self.cursor_y = 0
-        self.buffer = [[" "] * C64_COLS for _ in range(C64_ROWS)]
+        self.cursor_y = 0  # Content row index; status bar is separate.
+        self.status_text = ""
+        self.content_rows = C64_ROWS - C64_STATUS_ROWS
+        self.buffer = [[" "] * C64_COLS for _ in range(self.content_rows)]
         self.glyphs = self._load_font(font_path)
         self.default_glyph = self._render_pattern(self._fallback_pattern("?"))
 
@@ -645,17 +648,17 @@ class C64Renderer:
         return surface
 
     def clear(self):
-        self.buffer = [[" "] * C64_COLS for _ in range(C64_ROWS)]
+        self.buffer = [[" "] * C64_COLS for _ in range(self.content_rows)]
         self.cursor_x = 0
         self.cursor_y = 0
 
     def _newline(self):
         self.cursor_x = 0
         self.cursor_y += 1
-        if self.cursor_y >= C64_ROWS:
+        if self.cursor_y >= self.content_rows:
             self.buffer.pop(0)
             self.buffer.append([" "] * C64_COLS)
-            self.cursor_y = C64_ROWS - 1
+            self.cursor_y = self.content_rows - 1
 
     def _glyph_for_char(self, char):
         code = ord(char) if char else ord("?")
@@ -684,12 +687,27 @@ class C64Renderer:
             if self.cursor_x >= C64_COLS:
                 self._newline()
 
+    def set_status_bar(self, text):
+        """Update the persistent status/title bar shown on the top row."""
+        self.status_text = (text or "").strip().upper()
+
+    def _draw_status_bar(self):
+        if not self.status_text:
+            return
+        truncated = self.status_text[:C64_COLS].ljust(C64_COLS)
+        for x, ch in enumerate(truncated):
+            glyph = self._glyph_for_char(ch)
+            self.logical_surface.blit(glyph, (x * C64_CELL_SIZE_H, 0))
+
     def _draw_buffer(self):
         self.logical_surface.fill(C64_BLUE)
+        self._draw_status_bar()
         for y, row in enumerate(self.buffer):
             for x, ch in enumerate(row):
                 glyph = self._glyph_for_char(ch)
-                self.logical_surface.blit(glyph, (x * C64_CELL_SIZE_H, y * C64_CELL_SIZE_V))
+                self.logical_surface.blit(
+                    glyph, (x * C64_CELL_SIZE_H, (y + C64_STATUS_ROWS) * C64_CELL_SIZE_V)
+                )
 
     def render_frame(self, show_cursor=False):
         self._draw_buffer()
@@ -698,7 +716,7 @@ class C64Renderer:
             cursor_color = C64_LIGHT_BLUE
             cursor_rect = (
                 self.cursor_x * C64_CELL_SIZE_H,
-                self.cursor_y * C64_CELL_SIZE_V,
+                (self.cursor_y + C64_STATUS_ROWS) * C64_CELL_SIZE_V,
                 C64_CELL_SIZE_H,
                 C64_CELL_SIZE_V,
             )
