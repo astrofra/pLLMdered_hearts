@@ -5,6 +5,9 @@ import re
 import sys
 import time
 
+import tkinter as tk
+from tkinter import font as tkfont
+
 import ollama
 import pexpect
 
@@ -21,9 +24,11 @@ ENABLE_LLM = True
 ENABLE_READING_PAUSE = True
 ENABLE_C64_RENDERER = True
 ENABLE_KEYCLICK_BEEP = True
+ENABLE_COMMENTARY_RENDERER = True
 
 C64_FONT_PATH = None  # Using built-in fallback font; no external sprite sheet required.
 KEY_AUDIO_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "audio")
+COMMENTARY_FONT_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "fonts", "Roboto-ExtraLight.ttf")
 
 def llm_response_is_valid(llm_commentary):
     if llm_commentary is None:
@@ -114,6 +119,104 @@ def clean_output(text):
             continue
         clean_lines.append(line)
     return '\n'.join(clean_lines).strip()
+
+
+class CommentaryRenderer:
+    def __init__(self, width=960, height=720, font_path=None):
+        self.alive = True
+        self.root = tk.Tk()
+        self.root.title("Plundered Hearts - Commentary")
+        self.root.configure(bg="#0f1116")
+        self.root.geometry(f"{width}x{height}")
+        self.root.resizable(True, True)
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+
+        self.font_main = self._load_font(font_path, 16, "normal")
+        self.font_h1 = self._load_font(font_path, 20, "bold")
+        self.font_h2 = self._load_font(font_path, 18, "bold")
+        self.font_h3 = self._load_font(font_path, 16, "bold")
+        self.font_bold = self._load_font(font_path, 16, "bold")
+
+        self.text = tk.Text(
+            self.root,
+            bg="#0f1116",
+            fg="#e6ecf5",
+            wrap="word",
+            font=self.font_main,
+            bd=0,
+            highlightthickness=0,
+            padx=12,
+            pady=12,
+        )
+        self.text.pack(fill="both", expand=True)
+        self.text.tag_configure("h1", font=self.font_h1, foreground="#ffffff", spacing1=8, spacing3=6)
+        self.text.tag_configure("h2", font=self.font_h2, foreground="#cfd8e3", spacing1=6, spacing3=4)
+        self.text.tag_configure("h3", font=self.font_h3, foreground="#cfd8e3", spacing1=4, spacing3=3)
+        self.text.tag_configure("bullet", lmargin1=24, lmargin2=36)
+        self.text.tag_configure("bold", font=self.font_bold, foreground="#ffffff")
+
+    def _load_font(self, font_path, size, weight):
+        try:
+            if font_path and os.path.isfile(font_path):
+                return tkfont.Font(root=self.root, file=font_path, size=size, weight=weight)
+        except Exception:
+            pass
+        return tkfont.Font(root=self.root, family="Arial", size=size, weight=weight)
+
+    def update_text(self, markdown_text):
+        if not self.alive:
+            return
+        self.text.configure(state="normal")
+        self.text.delete("1.0", "end")
+        for raw_line in (markdown_text or "").splitlines():
+            line = raw_line.rstrip()
+            stripped = line.lstrip()
+            if stripped.startswith("### "):
+                self._insert_markdown_line(stripped[4:], ("h3",))
+            elif stripped.startswith("## "):
+                self._insert_markdown_line(stripped[3:], ("h2",))
+            elif stripped.startswith("# "):
+                self._insert_markdown_line(stripped[2:], ("h1",))
+            elif stripped.startswith("- "):
+                self._insert_markdown_line("• " + stripped[2:], ("bullet",))
+            else:
+                self._insert_markdown_line(line, ())
+        self.text.configure(state="disabled")
+        self.text.see("end")
+        self.process_events()
+
+    def _insert_markdown_line(self, text, base_tags):
+        """Minimal inline bold (**text**) support."""
+        pattern = re.compile(r"\*\*(.+?)\*\*")
+        idx = 0
+        for match in pattern.finditer(text):
+            pre = text[idx:match.start()]
+            if pre:
+                self.text.insert("end", pre, base_tags)
+            bold_text = match.group(1)
+            if bold_text:
+                self.text.insert("end", bold_text, (*base_tags, "bold"))
+            idx = match.end()
+        tail = text[idx:]
+        if tail or text == "":
+            self.text.insert("end", tail, base_tags)
+        self.text.insert("end", "\n", base_tags)
+
+    def process_events(self):
+        if not self.alive:
+            return
+        try:
+            self.root.update_idletasks()
+            self.root.update()
+        except tk.TclError:
+            self.alive = False
+
+    def _on_close(self):
+        self.alive = False
+        try:
+            self.root.destroy()
+        except Exception:
+            pass
 
 _KEY_SOUNDS = []
 _MIXER_READY = False
@@ -273,6 +376,15 @@ if ENABLE_C64_RENDERER:
         print(f"Unable to start C64 renderer: {exc}")
         renderer = None
 
+commentary_renderer = None
+if ENABLE_COMMENTARY_RENDERER and ENABLE_LLM:
+    try:
+        commentary_font_path = COMMENTARY_FONT_PATH if os.path.isfile(COMMENTARY_FONT_PATH) else None
+        commentary_renderer = CommentaryRenderer(font_path=commentary_font_path)
+    except Exception as exc:
+        print(f"Unable to start commentary renderer: {exc}")
+        commentary_renderer = None
+
 
 # Catch the intro message
 child.expect("Press RETURN or ENTER to begin")
@@ -323,6 +435,8 @@ prev_cmd = None
 while True : # for step, cmd in enumerate(plundered_hearts_commands):
     if renderer:
         renderer.process_events()
+    if commentary_renderer:
+        commentary_renderer.process_events()
 
     cmd = plundered_hearts_commands[cmd_index]
 
@@ -359,6 +473,8 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
         # print("\n")
         ai_thinking = llm_commentary + "\n"
         print("<AI thinks : '" + ai_thinking + "'>\n")
+        if commentary_renderer:
+            commentary_renderer.update_text(llm_commentary)
 
         if ENABLE_READING_PAUSE:
             time.sleep(estimate_reading_time(ai_thinking))
