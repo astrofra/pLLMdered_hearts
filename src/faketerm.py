@@ -258,8 +258,17 @@ child.expect("Press RETURN or ENTER to begin")
 intro_text = clean_output(child.before)
 print(intro_text)
 if renderer and intro_text:
-    renderer.write(intro_text + "\n")
-    renderer.render_frame()
+    # renderer.write(intro_text + "\n")
+    # renderer.render_frame()
+    type_to_renderer(
+        renderer,
+        intro_text + "\n",
+        base_delay=1 / 60.0,
+        min_delay=1 / 240.0,
+        max_delay=1 / 30.0,
+        beep=False,
+        word_mode=True,
+    )
 
 # Answer the intro message by pressing "enter"
 child.sendline("")
