@@ -861,7 +861,7 @@ def _play_key_beep(ch=" "):
         pass
 
 
-def type_to_renderer(renderer, text, base_delay=0.01, min_delay=0.005, max_delay=0.12):
+def type_to_renderer(renderer, text, base_delay=0.01, min_delay=0.005, max_delay=0.12, beep=True):
     """
     Simulate typing to the renderer: emit characters one by one with a delay
     proportional to ASCII distance from the previous character.
@@ -874,7 +874,8 @@ def type_to_renderer(renderer, text, base_delay=0.01, min_delay=0.005, max_delay
         renderer.render_frame()
         distance = abs(ord(ch) - ord(prev))
         delay = max(min_delay, min(max_delay, distance * base_delay))
-        _play_key_beep(ch)
+        if beep:
+            _play_key_beep(ch)
         time.sleep(delay)
         prev = ch
 
@@ -1026,7 +1027,7 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
     display_cmd = "> " + cmd.strip()
     print(display_cmd + "\n")
     if renderer:
-        type_to_renderer(renderer, display_cmd + "\n")
+        type_to_renderer(renderer, display_cmd + "\n", beep=True)
     child.sendline(" " + cmd)
     prev_output = ""
     prev_cmd = cmd
@@ -1053,11 +1054,19 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
             break
 
     cleaned = clean_output(buffer)
-    print(cleaned)
     if renderer:
         if cleaned:
-            renderer.write(cleaned + "\n")
-        renderer.render_frame()
+            type_to_renderer(
+                renderer,
+                cleaned + "\n",
+                base_delay=1 / 240.0,
+                min_delay=1 / 240.0,
+                max_delay=1 / 240.0,
+                beep=False,
+            )
+        else:
+            renderer.render_frame()
+    print(cleaned)
     prev_output = cleaned
 
     if ENABLE_READING_PAUSE:
