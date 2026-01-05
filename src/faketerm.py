@@ -16,7 +16,7 @@ from c64renderer import C64Renderer
 
 ## FIXME "[Press RETURN or ENTER to continue.]"
 
-ENABLE_LLM = False
+ENABLE_LLM = True
 ENABLE_READING_PAUSE = True
 ENABLE_C64_RENDERER = True
 ENABLE_KEYCLICK_BEEP = True
@@ -201,7 +201,7 @@ def type_to_renderer(
             time.sleep(delay)
         prev = ch
 
-# official Amiga solution
+# Official Amiga solution
 plundered_hearts_commands = [
     "stand up", "inventory", "examine smelling salts", "read tag", "examine banknote",
     "examine coffer", "examine door", "open door", "z", "scream", "e", "examine falcon",
@@ -239,7 +239,7 @@ plundered_hearts_commands = [
     "fire pistol at crulley"
 ]
 
-# wikipedia article about Plundered Hearts
+# Wikipedia article about Plundered Hearts
 plundered_hearts_wiki = """Plundered Hearts is an interactive fiction video game created by Amy Briggs and published by Infocom in 1987. Infocom's only game in the romance genre, it was released simultaneously for the Apple II, Commodore 64, Atari 8-bit computers, Atari ST, Amiga, Mac, and MS-DOS. It is Infocom's 28th game.
 Plundered Hearts casts the player in a well-defined role. The lead character is a young woman in the late 17th century who has received a letter. Jean Lafond, the governor of the small West Indies island of St. Sinistra, says that the player's father has contracted a wasting tropical disease. Lafond suggests that his recovery would be greatly helped by the loving presence of his daughter, and sends his ship (the Lafond Deux) to transport her.
 As the game begins, the ship is attacked by pirates and the player's character is kidnapped. Eventually, the player's character finds that two men are striving for her affections: dashing pirate Nicholas Jamison, and the conniving Jean Lafond. As the intrigue plays out, the lady does not sit idly by and watch the men duel over her; she must help Jamison overcome the evil plans of Lafond so that they have a chance to live happily ever after.
@@ -316,7 +316,7 @@ prev_output = initial_clean or ""
 cmd_index = 0
 prev_cmd = None
 
-# automated walkthrough
+# Automated walkthrough
 while True : # for step, cmd in enumerate(plundered_hearts_commands):
     if renderer:
         renderer.process_events()
@@ -333,8 +333,9 @@ while True : # for step, cmd in enumerate(plundered_hearts_commands):
         prompt = prompt + prev_output
 
         prompt = prompt + "From the known solution of the game, you know the next good command will be : " + cmd
-        prompt = prompt + "Please o give a detailled feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, then explain, IN FRENCH ARGOT, FIRST PERSON, what to do and why this is the best thing in this context."
-        prompt = prompt + "When thinking out loud, you refer yourself (and yourself only) as 'meuf' or 'frère'"
+        prompt = prompt + "Please give a strong feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, then explain, IN FRENCH ARGOT, FIRST PERSON, what to do and why this is the best thing in this context."
+        prompt = prompt + "When thinking out loud, you refer yourself (and yourself only) as 'meuf' or 'frère'."
+        prompt = prompt + "250 words maximum."
         llm_commentary = None
 
         retry = 0
