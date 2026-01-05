@@ -691,9 +691,18 @@ class C64Renderer:
                 glyph = self._glyph_for_char(ch)
                 self.logical_surface.blit(glyph, (x * C64_CELL_SIZE_H, y * C64_CELL_SIZE_V))
 
-    def render_frame(self):
+    def render_frame(self, show_cursor=False):
         self._draw_buffer()
         frame = self.logical_surface.copy()
+        if show_cursor:
+            cursor_color = C64_LIGHT_BLUE
+            cursor_rect = (
+                self.cursor_x * C64_CELL_SIZE_H,
+                self.cursor_y * C64_CELL_SIZE_V,
+                C64_CELL_SIZE_H,
+                C64_CELL_SIZE_V,
+            )
+            pygame.draw.rect(frame, cursor_color, cursor_rect)
         if self.enable_scanlines:
             frame.blit(self.scanline_overlay, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
         if self.enable_blur:

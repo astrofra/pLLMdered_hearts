@@ -166,11 +166,17 @@ def type_to_renderer(
         return
     prev = " "
     chunks = re.findall(r"\n|\S+\s*|\s+", text) if word_mode else list(text)
+    # Show cursor ahead of each chunk, and keep it after each chunk except the final one.
+    total_chunks = len([c for c in chunks if c])
+    typed = 0
     for chunk in chunks:
         if not chunk:
             continue
+        if renderer:
+            renderer.render_frame(show_cursor=True)
         renderer.write(chunk)
-        renderer.render_frame()
+        typed += 1
+        renderer.render_frame(show_cursor=typed < total_chunks)
         # Use the last non-newline character of the chunk to keep delays consistent.
         ch = next((c for c in reversed(chunk) if c not in "\r\n"), " ")
         if not ch.strip():
