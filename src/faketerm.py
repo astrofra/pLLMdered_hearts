@@ -17,7 +17,7 @@ from c64renderer import C64Renderer
 ## FIXME "[Press RETURN or ENTER to continue.]"
 
 LLM_MODEL = 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
-ENABLE_LLM = True
+ENABLE_LLM = False
 ENABLE_READING_PAUSE = True
 ENABLE_C64_RENDERER = True
 ENABLE_KEYCLICK_BEEP = True
