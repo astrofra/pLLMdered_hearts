@@ -21,6 +21,8 @@ ENABLE_LLM = False
 ENABLE_READING_PAUSE = True
 ENABLE_C64_RENDERER = True
 ENABLE_KEYCLICK_BEEP = True
+ENABLE_C64_FULLSCREEN = False
+C64_DISPLAY_INDEX = None  # 1-based display number (1, 2, 3); None uses the primary monitor.
 
 C64_FONT_PATH = None  # Using built-in fallback font; no external sprite sheet required.
 KEY_AUDIO_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "audio")
@@ -302,7 +304,18 @@ child = PopenSpawn("frotz -p roms/PLUNDERE.z3", encoding='utf-8', timeout=5)
 renderer = None
 if ENABLE_C64_RENDERER:
     try:
-        renderer = C64Renderer(font_path=C64_FONT_PATH, fps=50)
+        display_index = None
+        if C64_DISPLAY_INDEX:
+            try:
+                display_index = max(0, int(C64_DISPLAY_INDEX) - 1)
+            except (TypeError, ValueError):
+                display_index = None
+        renderer = C64Renderer(
+            font_path=C64_FONT_PATH,
+            fps=50,
+            fullscreen=ENABLE_C64_FULLSCREEN,
+            display_index=display_index,
+        )
     except Exception as exc:
         print(f"Unable to start C64 renderer: {exc}")
         renderer = None
