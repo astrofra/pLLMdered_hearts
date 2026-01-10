@@ -58,6 +58,10 @@ body {
   margin: 0 auto;
   opacity: 0;
   transition: opacity 250ms ease;
+  border: 1.5px solid var(--ink-dark);
+  border-radius: 18px;
+  padding: 28px 32px;
+  background: rgba(255, 255, 255, 0.35);
 }
 
 #content.visible {
