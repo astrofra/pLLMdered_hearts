@@ -14,8 +14,6 @@ from c64renderer import C64Renderer
 
 # os.environ["OLLAMA_NO_CUDA"] = "1"
 
-## FIXME "[Press RETURN or ENTER to continue.]"
-
 LLM_MODEL = 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
 ENABLE_LLM = True
 ENABLE_READING_PAUSE = True
@@ -246,9 +244,9 @@ def build_prompt(prev_output, next_cmd):
     prompt = prompt + (prev_output or "")
 
     prompt = prompt + "From the known solution of the game, you know the next good command will be : " + (next_cmd or "")
-    prompt = prompt + "Please give a strong feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, then explain, IN FRENCH ARGOT, FIRST PERSON, what to do and why this is the best thing in this context."
+    prompt = prompt + "Please give a strong feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, explaining why you would do this in this context."
     prompt = prompt + "When thinking out loud, you refer yourself (and yourself only) as 'meuf' or 'frere'."
-    prompt = prompt + "250 words maximum."
+    prompt = prompt + "One short paragraph maximum."
     return prompt
 
 # Official Amiga solution
