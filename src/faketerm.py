@@ -182,6 +182,16 @@ def type_to_renderer(
     """
     if not renderer or text is None:
         return
+    def _sleep_with_events(delay):
+        if delay <= 0:
+            return
+        end_time = time.time() + delay
+        while time.time() < end_time:
+            renderer.process_events()
+            remaining = end_time - time.time()
+            if remaining <= 0:
+                break
+            time.sleep(min(0.01, max(0.0, remaining)))
     prev = " "
     chunks = re.findall(r"\n|\S+\s*|\s+", text) if word_mode else list(text)
     # Show cursor ahead of each chunk, and keep it after each chunk except the final one.
@@ -190,6 +200,7 @@ def type_to_renderer(
     for chunk in chunks:
         if not chunk:
             continue
+        renderer.process_events()
         if renderer:
             renderer.render_frame(show_cursor=True)
         renderer.write(chunk)
@@ -204,7 +215,7 @@ def type_to_renderer(
         if beep and chunk not in ["\n", " ", ">"]:
             _play_key_beep(ch)
         if chunk not in ["\n", ">"]:
-            time.sleep(delay)
+            _sleep_with_events(delay)
         prev = ch
 
 
