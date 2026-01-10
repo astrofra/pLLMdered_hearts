@@ -1,4 +1,3 @@
-import random
 import sys
 
 import pygame
@@ -28,9 +27,8 @@ class C64Renderer:
         font_path=None,
         scale=None,
         fps=60,
-        enable_scanlines=False,
-        enable_flicker=False,
-        enable_blur=False,
+        fullscreen=False,
+        display_index=None,
     ):
         if pygame is None:
             raise ImportError("pygame is required for the C64 renderer. Install pygame to enable it.")
@@ -38,19 +36,28 @@ class C64Renderer:
         pygame.init()
         pygame.display.set_caption("Plundered Hearts - C64 view")
 
+        self.fullscreen = bool(fullscreen)
+        self.display_index = self._normalize_display_index(display_index)
+        self.display_size = self._get_display_size(self.display_index)
         self.fps = fps
-        self.enable_scanlines = enable_scanlines
-        self.enable_flicker = enable_flicker
-        self.enable_blur = enable_blur
-        self.scale = self._determine_scale(scale)
-        self.window_width = LOGICAL_WIDTH * self.scale + BORDER_THICKNESS * 2
-        self.window_height = LOGICAL_HEIGHT * self.scale + BORDER_THICKNESS * 2
-        self.window = pygame.display.set_mode((self.window_width, self.window_height))
+        self.scale = self._determine_scale(scale, self.display_size)
+        self.total_width = LOGICAL_WIDTH * self.scale + BORDER_THICKNESS * 2
+        self.total_height = LOGICAL_HEIGHT * self.scale + BORDER_THICKNESS * 2
+        if self.fullscreen and self.display_size:
+            self.window_width, self.window_height = self.display_size
+            self.render_offset_x = max(0, (self.window_width - self.total_width) // 2)
+            self.render_offset_y = max(0, (self.window_height - self.total_height) // 2)
+            window_flags = pygame.FULLSCREEN
+        else:
+            self.window_width = self.total_width
+            self.window_height = self.total_height
+            self.render_offset_x = 0
+            self.render_offset_y = 0
+            window_flags = 0
+        self.window = self._create_window(window_flags)
         self.clock = pygame.time.Clock()
 
-        # Use per-pixel alpha so scanline overlay blends correctly; fill with opaque blue each frame.
         self.logical_surface = pygame.Surface((LOGICAL_WIDTH, LOGICAL_HEIGHT), pygame.SRCALPHA).convert_alpha()
-        self.scanline_overlay = self._build_scanline_overlay()
 
         self.cursor_x = 0
         self.cursor_y = 0  # Content row index; status bar is separate.
@@ -60,9 +67,15 @@ class C64Renderer:
         self.glyphs = self._load_font(font_path)
         self.default_glyph = self._render_pattern(self._fallback_pattern("?"))
 
-    def _determine_scale(self, forced_scale):
+    def _determine_scale(self, forced_scale, display_size=None):
         if forced_scale:
             return max(1, int(forced_scale))
+        if display_size:
+            usable_w = max(1, display_size[0] - BORDER_THICKNESS * 2)
+            usable_h = max(1, display_size[1] - BORDER_THICKNESS * 2)
+            max_w = max(1, usable_w // LOGICAL_WIDTH)
+            max_h = max(1, usable_h // LOGICAL_HEIGHT)
+            return max(1, min(max_w, max_h))
         try:
             info = pygame.display.Info()
             usable_w = max(1, info.current_w - BORDER_THICKNESS * 2)
@@ -73,13 +86,50 @@ class C64Renderer:
         except pygame.error:
             return 2
 
-    def _build_scanline_overlay(self):
-        overlay = pygame.Surface((LOGICAL_WIDTH, LOGICAL_HEIGHT), pygame.SRCALPHA)
-        # Start with opaque white so BLEND_RGBA_MULT keeps base pixels as-is except where lines draw.
-        overlay.fill((255, 255, 255, 255))
-        for y in range(0, LOGICAL_HEIGHT, 2):
-            pygame.draw.line(overlay, (*C64_BLACK, 64), (0, y), (LOGICAL_WIDTH, y))
-        return overlay
+    def _normalize_display_index(self, display_index):
+        if display_index is None:
+            return None
+        try:
+            index = int(display_index)
+        except (TypeError, ValueError):
+            return None
+        if index < 0:
+            return None
+        try:
+            num_displays = pygame.display.get_num_displays()
+        except Exception:
+            return index
+        if index >= num_displays:
+            return None
+        return index
+
+    def _get_display_size(self, display_index):
+        if display_index is not None:
+            try:
+                sizes = pygame.display.get_desktop_sizes()
+                if sizes and 0 <= display_index < len(sizes):
+                    return sizes[display_index]
+            except Exception:
+                pass
+        try:
+            info = pygame.display.Info()
+            if info.current_w and info.current_h:
+                return (info.current_w, info.current_h)
+        except pygame.error:
+            return None
+        return None
+
+    def _create_window(self, window_flags):
+        try:
+            if self.display_index is not None:
+                return pygame.display.set_mode(
+                    (self.window_width, self.window_height),
+                    window_flags,
+                    display=self.display_index,
+                )
+        except TypeError:
+            pass
+        return pygame.display.set_mode((self.window_width, self.window_height), window_flags)
 
     def _load_font(self, font_path):
         # Always use the built-in placeholder font to avoid external dependencies.
@@ -735,31 +785,20 @@ class C64Renderer:
                 C64_CELL_SIZE_V,
             )
             pygame.draw.rect(frame, cursor_color, cursor_rect)
-        if self.enable_scanlines:
-            frame.blit(self.scanline_overlay, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-        if self.enable_blur:
-            downscaled = pygame.transform.scale(
-                frame, (int(LOGICAL_WIDTH * 0.9), int(LOGICAL_HEIGHT * 0.9))
-            )
-            frame = pygame.transform.scale(downscaled, (LOGICAL_WIDTH, LOGICAL_HEIGHT))
-
         scaled = pygame.transform.scale(
             frame, (LOGICAL_WIDTH * self.scale, LOGICAL_HEIGHT * self.scale)
         ).convert_alpha()
-        if self.enable_flicker:
-            flicker = random.uniform(-0.02, 0.02)
-            if flicker != 0:
-                overlay = pygame.Surface(scaled.get_size(), pygame.SRCALPHA)
-                if flicker > 0:
-                    overlay.fill((*C64_WHITE, int(255 * flicker)))
-                    scaled.blit(overlay, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
-                else:
-                    overlay.fill((*C64_BLACK, int(255 * abs(flicker))))
-                    scaled.blit(overlay, (0, 0), special_flags=pygame.BLEND_RGBA_SUB)
-
         self.window.fill(C64_BORDER_COLOR)
-        self.window.blit(scaled, (BORDER_THICKNESS, BORDER_THICKNESS))
+        dest_x = self.render_offset_x + BORDER_THICKNESS
+        dest_y = self.render_offset_y + BORDER_THICKNESS
+        self.window.blit(scaled, (dest_x, dest_y))
         if BORDER_THICKNESS > 0:
-            pygame.draw.rect(self.window, C64_BORDER_COLOR, self.window.get_rect(), BORDER_THICKNESS)
+            border_rect = pygame.Rect(
+                self.render_offset_x,
+                self.render_offset_y,
+                self.total_width,
+                self.total_height,
+            )
+            pygame.draw.rect(self.window, C64_BORDER_COLOR, border_rect, BORDER_THICKNESS)
         pygame.display.flip()
         self.clock.tick(self.fps)

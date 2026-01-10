@@ -16,14 +16,17 @@ from c64renderer import C64Renderer
 
 ## FIXME "[Press RETURN or ENTER to continue.]"
 
-LLM_MODEL = 'ministral-3:14b'
+LLM_MODEL = 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
 ENABLE_LLM = True
 ENABLE_READING_PAUSE = True
 ENABLE_C64_RENDERER = True
 ENABLE_KEYCLICK_BEEP = True
+ENABLE_C64_FULLSCREEN = False
+C64_DISPLAY_INDEX = None  # 1-based display number (1, 2, 3); None uses the primary monitor.
 
 C64_FONT_PATH = None  # Using built-in fallback font; no external sprite sheet required.
 KEY_AUDIO_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "audio")
+LLM_OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "llm_out")
 
 def llm_response_is_valid(llm_commentary):
     if llm_commentary is None:
@@ -204,6 +207,39 @@ def type_to_renderer(
             time.sleep(delay)
         prev = ch
 
+
+def write_llm_markdown(text):
+    """Persist LLM commentary as a timestamped markdown file in llm_out/."""
+    if text is None:
+        return None
+    try:
+        os.makedirs(LLM_OUT_DIR, exist_ok=True)
+        timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+        filename = f"{timestamp}.md"
+        path = os.path.join(LLM_OUT_DIR, filename)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+        return path
+    except Exception as exc:
+        print(f"Failed to write LLM output: {exc}")
+        return None
+
+
+def build_prompt(prev_output, next_cmd):
+    prompt = "You are playing Pludered Hearts, a text interactive fiction by Amy Briggs."
+    prompt = prompt + "Here is what Wikipedia says about this game : "
+    prompt = prompt + plundered_hearts_wiki
+    prompt = prompt + plundered_hearts_fandom
+
+    prompt = prompt + "Here is the latest output from the game : "
+    prompt = prompt + (prev_output or "")
+
+    prompt = prompt + "From the known solution of the game, you know the next good command will be : " + (next_cmd or "")
+    prompt = prompt + "Please give a strong feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, then explain, IN FRENCH ARGOT, FIRST PERSON, what to do and why this is the best thing in this context."
+    prompt = prompt + "When thinking out loud, you refer yourself (and yourself only) as 'meuf' or 'frere'."
+    prompt = prompt + "250 words maximum."
+    return prompt
+
 # Official Amiga solution
 plundered_hearts_commands = [
     "stand up", "inventory", "examine smelling salts", "read tag", "examine banknote",
@@ -268,150 +304,119 @@ child = PopenSpawn("frotz -p roms/PLUNDERE.z3", encoding='utf-8', timeout=5)
 renderer = None
 if ENABLE_C64_RENDERER:
     try:
-        renderer = C64Renderer(font_path=C64_FONT_PATH, fps=50)
+        display_index = None
+        if C64_DISPLAY_INDEX:
+            try:
+                display_index = max(0, int(C64_DISPLAY_INDEX) - 1)
+            except (TypeError, ValueError):
+                display_index = None
+        renderer = C64Renderer(
+            font_path=C64_FONT_PATH,
+            fps=50,
+            fullscreen=ENABLE_C64_FULLSCREEN,
+            display_index=display_index,
+        )
     except Exception as exc:
         print(f"Unable to start C64 renderer: {exc}")
         renderer = None
 
-
-# Catch the intro message
-child.expect("Press RETURN or ENTER to begin")
-intro_text = clean_output(child.before)
-if renderer and LAST_STATUS_BAR:
-    renderer.set_status_bar(LAST_STATUS_BAR)
-print(intro_text)
-if renderer and intro_text:
-    # renderer.write(intro_text + "\n")
-    # renderer.render_frame()
-    type_to_renderer(
-        renderer,
-        intro_text + "\n",
-        base_delay=1 / 60.0,
-        min_delay=1 / 240.0,
-        max_delay=1 / 30.0,
-        beep=False,
-        word_mode=True,
-    )
-
-# Answer the intro message by pressing "enter"
-child.sendline("")
-
-time.sleep(0.5)
-
-# Initial output
-# child.expect("\r\x1b", timeout=5)
-# print(repr(child.before))
-buffer = ""
-for _ in range(50):  # max itérations (sécurité)
-    buffer += child.read_nonblocking(size=1024, timeout=0.2)
-    if ">" in buffer[-10:]:
-        break
-# print(child.before)
-print("\n")
-initial_clean = clean_output(buffer)
-if renderer and LAST_STATUS_BAR:
-    renderer.set_status_bar(LAST_STATUS_BAR)
-if renderer and initial_clean:
-    renderer.write(initial_clean + "\n")
-    renderer.render_frame()
-
-prev_output = initial_clean or ""
+prev_output = ""
 cmd_index = 0
 prev_cmd = None
+pending_intro_ack = True
 
-# Automated walkthrough
-while True : # for step, cmd in enumerate(plundered_hearts_commands):
+# Unified loop for reading, displaying, and responding.
+while True:  # for step, cmd in enumerate(plundered_hearts_commands):
     if renderer:
         renderer.process_events()
 
-    cmd = plundered_hearts_commands[cmd_index]
-
-    if ENABLE_LLM:
-        prompt = "You are playing Pludered Hearts, a text interactive fiction by Amy Briggs."
-        prompt = prompt + "Here is what Wikipedia says about this game : "
-        prompt = prompt + plundered_hearts_wiki
-        prompt = prompt + plundered_hearts_fandom
-
-        prompt = prompt + "Here is the latest output from the game : "
-        prompt = prompt + prev_output
-
-        prompt = prompt + "From the known solution of the game, you know the next good command will be : " + cmd
-        prompt = prompt + "Please give a strong feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, then explain, IN FRENCH ARGOT, FIRST PERSON, what to do and why this is the best thing in this context."
-        prompt = prompt + "When thinking out loud, you refer yourself (and yourself only) as 'meuf' or 'frère'."
-        prompt = prompt + "250 words maximum."
-        llm_commentary = None
-
-        retry = 0
-        while llm_commentary is None: # llm_commentary is None or not("comment" in llm_commentary) or not("command" in llm_commentary):
-            response = ollama.chat(
-                model= LLM_MODEL, # , 'qwen3:8b', # 'gpt-oss:20b', # 'llama3:8b', # model = 'deepseek-r1:7b',
-                messages=[{
-                    'role': 'user',
-                    'content': prompt
-                    }]
-            )
-            # print(response.message.content)
-            llm_commentary = response.message.content # extract_and_parse_json(response.message.content)
-            if retry > 0:
-                print("Retry #" + str(retry))
-            retry = retry + 1
-
-        # print("\n")
-        ai_thinking = llm_commentary + "\n"
-        print("<AI thinks : '" + ai_thinking + "'>\n")
-
-        if ENABLE_READING_PAUSE:
-            time.sleep(estimate_reading_time(ai_thinking))
-
-    display_cmd = ">> " + cmd.strip()
-    print(display_cmd + "\n")
-    if renderer:
-        type_to_renderer(renderer, "\n" + display_cmd + "\n", beep=True)
-    child.sendline(" " + cmd)
-    prev_output = ""
-    prev_cmd = cmd
-
-    # Flush output after command
-    buffer = ""
+    raw_output = ""
     start_time = time.time()
-    timeout_seconds = 4  # How long do we wait for the output to finish ?
+    timeout_seconds = 4
     while time.time() - start_time < timeout_seconds:
         try:
-            if renderer:
-                renderer.process_events()
             chunk = child.read_nonblocking(size=1024, timeout=0.3)
-            buffer += chunk
-
-            # Some screens pause with "***MORE***" and wait for an ENTER key.
-            if "***MORE***" in buffer:
-                buffer = buffer.replace("***MORE***", "")
+            if not chunk:
+                break
+            raw_output += chunk
+            if "***MORE***" in raw_output or  "[Press RETURN or ENTER to continue.]" in raw_output:
+                raw_output = raw_output.replace("***MORE***", "")
                 child.sendline("")
-                # Give the game a moment to continue output.
-                time.sleep(0.1)
                 continue
+            if ">" in raw_output:
+                break
         except pexpect.exceptions.TIMEOUT:
             break
 
-    cleaned = clean_output(buffer)
-    if renderer and LAST_STATUS_BAR:
-        renderer.set_status_bar(LAST_STATUS_BAR)
-    if renderer:
+    if not raw_output and pending_intro_ack:
+        try:
+            child.expect("Press RETURN or ENTER to begin", timeout=1)
+            raw_output = (child.before or "") + (child.after or "")
+        except pexpect.exceptions.TIMEOUT:
+            pass
+
+    if raw_output:
+        cleaned = clean_output(raw_output)
+        if renderer and LAST_STATUS_BAR:
+            renderer.set_status_bar(LAST_STATUS_BAR)
+        if renderer:
+            if cleaned:
+                type_to_renderer(
+                    renderer,
+                    cleaned + "\n",
+                    base_delay=1 / 60.0,
+                    min_delay=1 / 240.0,
+                    max_delay=1 / 30.0,
+                    beep=False,
+                    word_mode=True,
+                )
+            else:
+                renderer.render_frame()
+        print(cleaned)
         if cleaned:
-            type_to_renderer(
-                renderer,
-                cleaned + "\n",
-                base_delay=1 / 60.0,
-                min_delay=1 / 240.0,
-                max_delay=1 / 30.0,
-                beep=False,
-                word_mode=True,
-            )
-        else:
-            renderer.render_frame()
-    print(cleaned)
-    prev_output = cleaned
+            prev_output = cleaned
+
+    if pending_intro_ack and ("Press RETURN or ENTER to begin" in raw_output or not raw_output):
+        child.sendline("")
+        pending_intro_ack = False
+        continue
+
+    # Only proceed if the game shows a prompt and we still have commands to send.
+    if ">" in raw_output and cmd_index < len(plundered_hearts_commands):
+        cmd = plundered_hearts_commands[cmd_index]
+
+        if ENABLE_LLM:
+            prompt = build_prompt(prev_output, cmd)
+            llm_commentary = None
+            retry = 0
+            while llm_commentary is None:
+                response = ollama.chat(
+                    model=LLM_MODEL,
+                    messages=[{
+                        'role': 'user',
+                        'content': prompt
+                        }]
+                )
+                llm_commentary = response.message.content
+                if retry > 0:
+                    print("Retry #" + str(retry))
+                retry = retry + 1
+            ai_thinking = llm_commentary + "\n"
+            print("<AI thinks : '" + ai_thinking + "'>\n")
+            write_llm_markdown(llm_commentary)
+            if ENABLE_READING_PAUSE:
+                time.sleep(estimate_reading_time(ai_thinking))
+
+        display_cmd = ">> " + cmd.strip()
+        print(display_cmd + "\n")
+        if renderer:
+            type_to_renderer(renderer, "\n" + display_cmd + "\n", beep=True)
+        child.sendline(" " + cmd)
+        prev_cmd = cmd
+        cmd_index += 1
 
     if ENABLE_READING_PAUSE:
         time.sleep(1.0)  # artificially wait to allow reading
 
-    cmd_index = cmd_index + 1
+    if cmd_index >= len(plundered_hearts_commands):
+        break
