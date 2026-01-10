@@ -9,9 +9,17 @@
 </head>
 <body>
   <div id="container">
-    <div id="content" class="fade"></div>
-    <div class="hero">
-      <img src="static/img/heroin-image.png" alt="Heroine portrait" />
+    <div class="video-panel">
+      <video id="side-video" autoplay muted loop playsinline controls>
+        <source src="static/video/abriggs-itw.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    </div>
+    <div class="viewer-panel">
+      <div id="content" class="fade"></div>
+      <div class="hero">
+        <img src="static/img/heroin-image.png" alt="Heroine portrait" />
+      </div>
     </div>
   </div>
   <script src="main.js"></script>
