@@ -52,8 +52,8 @@ body {
   width: 100%;
   padding: 40px 24px 0;
   display: grid;
-  grid-template-columns: minmax(260px, 38%) minmax(320px, 1fr);
-  gap: 28px;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 20%);
+  gap: 22px;
   min-height: 100vh;
 }
 
@@ -64,8 +64,8 @@ body {
 
 .video-panel video {
   width: 100%;
-  height: calc(100vh - 80px);
-  max-height: 760px;
+  height: calc(100vh - 72px);
+  max-height: 860px;
   object-fit: cover;
   border-radius: 20px;
   border: 1.5px solid var(--ink-dark);
@@ -76,12 +76,13 @@ body {
 .viewer-panel {
   display: flex;
   flex-direction: column;
+  gap: 18px;
   min-height: 100%;
 }
 
 #content {
-  max-width: 840px;
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
   opacity: 0;
   transition: opacity 250ms ease;
   border: 1.5px solid var(--ink-dark);
