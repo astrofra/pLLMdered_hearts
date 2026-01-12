@@ -227,6 +227,17 @@ def write_llm_markdown(text):
     """Persist LLM commentary as a timestamped markdown file in llm_out/."""
     if text is None:
         return None
+    try:
+        os.makedirs(LLM_OUT_DIR, exist_ok=True)
+        timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+        filename = f"{timestamp}.md"
+        path = os.path.join(LLM_OUT_DIR, filename)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+        return path
+    except Exception as exc:
+        print(f"Failed to write LLM output: {exc}")
+        return None
 
 
 def embed_text(text):
@@ -256,17 +267,6 @@ def write_embeddings(path, data):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as handle:
         json.dump(data, handle, ensure_ascii=True)
-    try:
-        os.makedirs(LLM_OUT_DIR, exist_ok=True)
-        timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-        filename = f"{timestamp}.md"
-        path = os.path.join(LLM_OUT_DIR, filename)
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(text)
-        return path
-    except Exception as exc:
-        print(f"Failed to write LLM output: {exc}")
-        return None
 
 
 def build_prompt(prev_output, next_cmd):
