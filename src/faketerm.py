@@ -1,6 +1,5 @@
 import json
 import os
-import random
 import re
 import sys
 import time
@@ -340,6 +339,27 @@ The game can be played to completion with four potential endings. However, in on
 There was a divide within Infocom regarding whether interactive fiction protagonists should be "audience stand-ins", or whether they should have defined characters. For instance, after negative reaction to the anti-hero protagonist of Infidel, implementor Michael Berlyn concluded that "People really don’t want to know who they are [in a game]." Plundered Hearts falls on the opposite side of the spectrum. Lady Dimsford's capable and spunky personality subverts the game's "damsel in distress" setup.
 """
 
+cmd_replace_dict = {
+    "E": "EAST",
+    "W": "WEST",
+    "N": "NORTH",
+    "S": "SOUTH",
+    "Z": "WAIT",
+    "NE": "NORTHEAST",
+    "NW": "NORTHWEST",
+    "SE": "SOUTHEAST",
+    "SW": "SOUTHWEST", 
+    "U": "UP",
+    "D": "DOWN",
+    "L": "LOOK"
+}
+
+def enhance_game_command(cmd):
+    cmd = cmd.upper()
+    if cmd in cmd_replace_dict:
+        return cmd_replace_dict[cmd]
+    return cmd
+
 # run frotz through a terminal emulator, using the ascii mode
 # child = pexpect.spawn("frotz -p roms/PLUNDERE.z3", encoding='utf-8', timeout=5)
 from pexpect.popen_spawn import PopenSpawn
@@ -429,7 +449,7 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
 
     # Only proceed if the game shows a prompt and we still have commands to send.
     if ">" in raw_output and cmd_index < len(plundered_hearts_commands):
-        cmd = plundered_hearts_commands[cmd_index]
+        cmd = enhance_game_command(plundered_hearts_commands[cmd_index])
 
         if ENABLE_LLM:
             prompt = build_prompt(prev_output, cmd)
