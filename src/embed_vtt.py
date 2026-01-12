@@ -77,7 +77,7 @@ def embed_cues(cues, model: str):
         results.append(
             {
                 "timecode": cue["timecode"],
-                "text": cue["text"],
+                # "text": cue["text"],
                 "embedding": response["embedding"],
             }
         )

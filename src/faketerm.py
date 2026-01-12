@@ -15,7 +15,8 @@ from c64renderer import C64Renderer
 # os.environ["OLLAMA_NO_CUDA"] = "1"
 
 LLM_MODEL = 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
-ENABLE_LLM = True
+ENABLE_LLM = False
+ENABLE_EMBED = True
 ENABLE_READING_PAUSE = True
 ENABLE_C64_RENDERER = True
 ENABLE_KEYCLICK_BEEP = True
@@ -25,6 +26,11 @@ C64_DISPLAY_INDEX = None  # 1-based display number (1, 2, 3); None uses the prim
 C64_FONT_PATH = None  # Using built-in fallback font; no external sprite sheet required.
 KEY_AUDIO_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "audio")
 LLM_OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "llm_out")
+EMBED_MODEL = "qwen3-embedding"
+EMBED_OUT_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "game-embeddings.json")
+
+if ENABLE_LLM and ENABLE_EMBED:
+    raise ValueError("ENABLE_LLM and ENABLE_EMBED are mutually exclusive.")
 
 def llm_response_is_valid(llm_commentary):
     if llm_commentary is None:
@@ -221,6 +227,35 @@ def write_llm_markdown(text):
     """Persist LLM commentary as a timestamped markdown file in llm_out/."""
     if text is None:
         return None
+
+
+def embed_text(text):
+    if text is None:
+        return None
+    text = text.strip()
+    if not text:
+        return None
+    response = ollama.embeddings(model=EMBED_MODEL, prompt=text)
+    return response.get("embedding")
+
+
+def load_embeddings(path):
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+        if isinstance(data, list):
+            return data
+    except Exception:
+        pass
+    return []
+
+
+def write_embeddings(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(data, handle, ensure_ascii=True)
     try:
         os.makedirs(LLM_OUT_DIR, exist_ok=True)
         timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
@@ -333,6 +368,7 @@ prev_output = ""
 cmd_index = 0
 prev_cmd = None
 pending_intro_ack = True
+last_cleaned = ""
 
 # Unified loop for reading, displaying, and responding.
 while True:  # for step, cmd in enumerate(plundered_hearts_commands):
@@ -366,6 +402,7 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
 
     if raw_output:
         cleaned = clean_output(raw_output)
+        last_cleaned = cleaned
         if renderer and LAST_STATUS_BAR:
             renderer.set_status_bar(LAST_STATUS_BAR)
         if renderer:
@@ -415,6 +452,15 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
             write_llm_markdown(llm_commentary)
             if ENABLE_READING_PAUSE:
                 time.sleep(estimate_reading_time(ai_thinking))
+        elif ENABLE_EMBED:
+            embeddings = load_embeddings(EMBED_OUT_PATH)
+            while len(embeddings) <= cmd_index:
+                embeddings.append(None)
+            embeddings[cmd_index] = {
+                "cleaned": embed_text(last_cleaned),
+                "cmd": embed_text(cmd),
+            }
+            write_embeddings(EMBED_OUT_PATH, embeddings)
 
         display_cmd = ">> " + cmd.strip()
         print(display_cmd + "\n")
