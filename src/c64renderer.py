@@ -4,11 +4,11 @@ import pygame
 
 # Toggle for Windows "always on top" behavior.
 ENABLE_ALWAYS_ON_TOP = True
-ALWAYS_ON_TOP_REFRESH_MS = 1000
+ALWAYS_ON_TOP_REFRESH_MS = 100
 
 # Commodore 64 style display settings
-C64_COLS = 75
-C64_ROWS = 40
+C64_COLS = 78
+C64_ROWS = 30
 C64_STATUS_ROWS = 1  # Reserve top row for status/title bar.
 C64_CELL_SIZE_H = 8
 C64_CELL_SIZE_V = 10
@@ -23,7 +23,7 @@ C64_BLACK = (0, 0, 0)
 
 # Distinct border styling so it stays visible against the screen background.
 C64_BORDER_COLOR = C64_BLUE
-BORDER_THICKNESS = 0
+BORDER_THICKNESS = 64
 
 class C64Renderer:
     def __init__(
@@ -34,6 +34,8 @@ class C64Renderer:
         fullscreen=False,
         display_index=None,
         always_on_top=None,
+        output_scale=1,
+        fit_to_display=False,
     ):
         if pygame is None:
             raise ImportError("pygame is required for the C64 renderer. Install pygame to enable it.")
@@ -49,13 +51,22 @@ class C64Renderer:
             self.always_on_top = bool(always_on_top)
         self.display_size = self._get_display_size(self.display_index)
         self.fps = fps
+        try:
+            self.output_scale = max(1, int(output_scale))
+        except (TypeError, ValueError):
+            self.output_scale = 1
+        self.fit_to_display = bool(fit_to_display)
         self.scale = self._determine_scale(scale, self.display_size)
-        self.total_width = LOGICAL_WIDTH * self.scale + BORDER_THICKNESS * 2
-        self.total_height = LOGICAL_HEIGHT * self.scale + BORDER_THICKNESS * 2
+        self.total_width = LOGICAL_WIDTH * self.scale * self.output_scale + BORDER_THICKNESS * 2
+        self.total_height = LOGICAL_HEIGHT * self.scale * self.output_scale + BORDER_THICKNESS * 2
         if self.fullscreen and self.display_size:
             self.window_width, self.window_height = self.display_size
-            self.render_offset_x = max(0, (self.window_width - self.total_width) // 2)
-            self.render_offset_y = max(0, (self.window_height - self.total_height) // 2)
+            if self.fit_to_display:
+                self.render_offset_x = 0
+                self.render_offset_y = 0
+            else:
+                self.render_offset_x = max(0, (self.window_width - self.total_width) // 2)
+                self.render_offset_y = max(0, (self.window_height - self.total_height) // 2)
             window_flags = pygame.FULLSCREEN
         else:
             self.window_width = self.total_width
@@ -835,9 +846,14 @@ class C64Renderer:
                 C64_CELL_SIZE_V,
             )
             pygame.draw.rect(frame, cursor_color, cursor_rect)
-        scaled = pygame.transform.scale(
-            frame, (LOGICAL_WIDTH * self.scale, LOGICAL_HEIGHT * self.scale)
-        ).convert_alpha()
+        scaled_w = LOGICAL_WIDTH * self.scale * self.output_scale
+        scaled_h = LOGICAL_HEIGHT * self.scale * self.output_scale
+        scaled = pygame.transform.scale(frame, (scaled_w, scaled_h)).convert_alpha()
+        if self.fit_to_display:
+            target_w = max(1, self.window_width - BORDER_THICKNESS * 2)
+            target_h = max(1, self.window_height - BORDER_THICKNESS * 2)
+            if scaled_w != target_w or scaled_h != target_h:
+                scaled = pygame.transform.scale(scaled, (target_w, target_h)).convert_alpha()
         self.window.fill(C64_BORDER_COLOR)
         dest_x = self.render_offset_x + BORDER_THICKNESS
         dest_y = self.render_offset_y + BORDER_THICKNESS
