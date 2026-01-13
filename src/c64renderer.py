@@ -2,6 +2,10 @@ import sys
 
 import pygame
 
+# Toggle for Windows "always on top" behavior.
+ENABLE_ALWAYS_ON_TOP = True
+ALWAYS_ON_TOP_REFRESH_MS = 1000
+
 # Commodore 64 style display settings
 C64_COLS = 75
 C64_ROWS = 40
@@ -29,6 +33,7 @@ class C64Renderer:
         fps=60,
         fullscreen=False,
         display_index=None,
+        always_on_top=None,
     ):
         if pygame is None:
             raise ImportError("pygame is required for the C64 renderer. Install pygame to enable it.")
@@ -38,6 +43,10 @@ class C64Renderer:
 
         self.fullscreen = bool(fullscreen)
         self.display_index = self._normalize_display_index(display_index)
+        if always_on_top is None:
+            self.always_on_top = ENABLE_ALWAYS_ON_TOP
+        else:
+            self.always_on_top = bool(always_on_top)
         self.display_size = self._get_display_size(self.display_index)
         self.fps = fps
         self.scale = self._determine_scale(scale, self.display_size)
@@ -55,6 +64,11 @@ class C64Renderer:
             self.render_offset_y = 0
             window_flags = 0
         self.window = self._create_window(window_flags)
+        if self.always_on_top:
+            self._set_always_on_top()
+            self._next_topmost_check_ms = pygame.time.get_ticks() + ALWAYS_ON_TOP_REFRESH_MS
+        else:
+            self._next_topmost_check_ms = None
         self.clock = pygame.time.Clock()
 
         self.logical_surface = pygame.Surface((LOGICAL_WIDTH, LOGICAL_HEIGHT), pygame.SRCALPHA).convert_alpha()
@@ -130,6 +144,41 @@ class C64Renderer:
         except TypeError:
             pass
         return pygame.display.set_mode((self.window_width, self.window_height), window_flags)
+
+    def _set_always_on_top(self):
+        if not sys.platform.startswith("win"):
+            return
+        try:
+            import ctypes
+
+            wm_info = pygame.display.get_wm_info()
+            hwnd = wm_info.get("window")
+            if not hwnd:
+                return
+            HWND_TOPMOST = -1
+            SWP_NOMOVE = 0x0002
+            SWP_NOSIZE = 0x0001
+            SWP_SHOWWINDOW = 0x0040
+            ctypes.windll.user32.SetWindowPos(
+                hwnd,
+                HWND_TOPMOST,
+                0,
+                0,
+                0,
+                0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW,
+            )
+        except Exception:
+            pass
+
+    def _refresh_always_on_top(self):
+        if not self.always_on_top or self._next_topmost_check_ms is None:
+            return
+        now_ms = pygame.time.get_ticks()
+        if now_ms < self._next_topmost_check_ms:
+            return
+        self._set_always_on_top()
+        self._next_topmost_check_ms = now_ms + ALWAYS_ON_TOP_REFRESH_MS
 
     def _load_font(self, font_path):
         # Always use the built-in placeholder font to avoid external dependencies.
@@ -774,6 +823,7 @@ class C64Renderer:
                 )
 
     def render_frame(self, show_cursor=False):
+        self._refresh_always_on_top()
         self._draw_buffer()
         frame = self.logical_surface.copy()
         if show_cursor:
