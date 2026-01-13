@@ -14,8 +14,8 @@ from c64renderer import C64Renderer
 # os.environ["OLLAMA_NO_CUDA"] = "1"
 
 LLM_MODEL = 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
-ENABLE_LLM = False
-ENABLE_EMBED = True
+ENABLE_LLM = True
+ENABLE_EMBED = False
 ENABLE_READING_PAUSE = True
 ENABLE_C64_RENDERER = True
 ENABLE_KEYCLICK_BEEP = True
