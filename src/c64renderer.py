@@ -3,8 +3,8 @@ import sys
 import pygame
 
 # Commodore 64 style display settings
-C64_COLS = 80
-C64_ROWS = 50
+C64_COLS = 75
+C64_ROWS = 40
 C64_STATUS_ROWS = 1  # Reserve top row for status/title bar.
 C64_CELL_SIZE_H = 8
 C64_CELL_SIZE_V = 10
@@ -19,7 +19,7 @@ C64_BLACK = (0, 0, 0)
 
 # Distinct border styling so it stays visible against the screen background.
 C64_BORDER_COLOR = C64_BLUE
-BORDER_THICKNESS = 64
+BORDER_THICKNESS = 0
 
 class C64Renderer:
     def __init__(

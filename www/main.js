@@ -39,6 +39,53 @@ async function fetchLatestFile(filePath) {
   }
 }
 
+function parseTimecodeToSeconds(timecode) {
+  if (!timecode) return null;
+  const match = /(\d+):(\d+):(\d+)(?:\.(\d+))?/.exec(timecode);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const seconds = Number(match[3]);
+  const millis = match[4] ? Number(match[4].padEnd(3, "0")) : 0;
+  if ([hours, minutes, seconds, millis].some((v) => Number.isNaN(v))) {
+    return null;
+  }
+  return hours * 3600 + minutes * 60 + seconds + millis / 1000;
+}
+
+function parseTimecodeRange(rangeText) {
+  if (!rangeText) return null;
+  const parts = rangeText.split("-->");
+  if (!parts.length) return null;
+  return parseTimecodeToSeconds(parts[0].trim());
+}
+
+async function fetchTimecodeMetadata(filePath) {
+  try {
+    const res = await fetch(filePath, { cache: "no-store" });
+    if (!res.ok) {
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    console.warn("Timecode metadata fetch failed:", err);
+    return null;
+  }
+}
+
+function seekVideoToTimecode(timecodeText) {
+  const video = document.getElementById("side-video");
+  if (!video) return;
+  const seconds = parseTimecodeRange(timecodeText);
+  if (seconds === null) return;
+  if (!Number.isFinite(seconds)) return;
+  try {
+    video.currentTime = seconds;
+  } catch (err) {
+    console.warn("Video seek failed:", err);
+  }
+}
+
 function renderMarkdown(mdText) {
   const container = document.getElementById("content");
   if (!container) return;
@@ -62,6 +109,11 @@ async function poll() {
   const text = await fetchLatestFile(OUTPUT_DIR + newest);
   if (text !== null) {
     renderMarkdown(text);
+    const metaPath = OUTPUT_DIR + newest.replace(/\.md$/i, ".json");
+    const meta = await fetchTimecodeMetadata(metaPath);
+    if (meta && meta.timecode) {
+      seekVideoToTimecode(meta.timecode);
+    }
   }
 }
 

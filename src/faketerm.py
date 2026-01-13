@@ -19,8 +19,8 @@ ENABLE_EMBED = False
 ENABLE_READING_PAUSE = True
 ENABLE_C64_RENDERER = True
 ENABLE_KEYCLICK_BEEP = True
-ENABLE_C64_FULLSCREEN = False
-C64_DISPLAY_INDEX = None  # 1-based display number (1, 2, 3); None uses the primary monitor.
+ENABLE_C64_FULLSCREEN = True
+C64_DISPLAY_INDEX = 2  # 1-based display number (1, 2, 3); None uses the primary monitor.
 
 C64_FONT_PATH = None  # Using built-in fallback font; no external sprite sheet required.
 KEY_AUDIO_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "audio")
