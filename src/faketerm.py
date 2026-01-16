@@ -173,6 +173,29 @@ def _play_key_beep(ch=" "):
         pass
 
 
+def _exit_immediately():
+    try:
+        if child is not None:
+            child.terminate(force=True)
+    except Exception:
+        pass
+    try:
+        pygame.quit()
+    except Exception:
+        pass
+    sys.exit(0)
+
+
+def _handle_quit_shortcut():
+    if not renderer or pygame is None:
+        return
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            _exit_immediately()
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            _exit_immediately()
+
+
 def type_to_renderer(
     renderer,
     text,
@@ -193,7 +216,7 @@ def type_to_renderer(
             return
         end_time = time.time() + delay
         while time.time() < end_time:
-            renderer.process_events()
+            _handle_quit_shortcut()
             remaining = end_time - time.time()
             if remaining <= 0:
                 break
@@ -206,7 +229,7 @@ def type_to_renderer(
     for chunk in chunks:
         if not chunk:
             continue
-        renderer.process_events()
+        _handle_quit_shortcut()
         if renderer:
             renderer.render_frame(show_cursor=True)
         renderer.write(chunk)
@@ -439,8 +462,7 @@ timecode_cache = load_timecode_cache(LLM_TIMECODE_CACHE_PATH)
 
 # Unified loop for reading, displaying, and responding.
 while True:  # for step, cmd in enumerate(plundered_hearts_commands):
-    if renderer:
-        renderer.process_events()
+    _handle_quit_shortcut()
 
     raw_output = ""
     start_time = time.time()
