@@ -16,7 +16,6 @@ from c64renderer import C64Renderer
 LLM_MODEL = 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
 ENABLE_LLM = True
 ENABLE_EMBED = False
-ENABLE_READING_PAUSE = True
 ENABLE_C64_RENDERER = True
 ENABLE_KEYCLICK_BEEP = True
 ENABLE_C64_FULLSCREEN = True
@@ -39,12 +38,6 @@ def llm_response_is_valid(llm_commentary):
         return False
     
     return True
-
-def estimate_reading_time(text, wps=4.0, min_delay=0.3, max_delay=5.0):
-    """Estimate a human-readable delay (in seconds) based on word count."""
-    word_count = len(text.strip().split())
-    delay = word_count / wps
-    return max(min_delay, min(delay, max_delay))  # Clamp delay
 
 def extract_and_parse_json(text):
     """
@@ -524,6 +517,11 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
             prompt = build_prompt(prev_output, cmd)
             llm_commentary = None
             retry = 0
+            status_color = None
+            if renderer:
+                status_color = getattr(renderer, "status_bar_bg", None)
+                renderer.set_status_bar_color((0, 0, 0))
+                renderer.render_frame()
             while llm_commentary is None:
                 response = ollama.chat(
                     model=LLM_MODEL,
@@ -536,12 +534,13 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                 if retry > 0:
                     print("Retry #" + str(retry))
                 retry = retry + 1
+            if renderer and status_color:
+                renderer.set_status_bar_color(status_color)
+                renderer.render_frame()
             ai_thinking = llm_commentary + "\n"
             print("<AI thinks : '" + ai_thinking + "'>\n")
             llm_path = write_llm_markdown(llm_commentary)
             write_llm_timecode_metadata(llm_path, get_timecode_entry(timecode_cache, cmd_index))
-            if ENABLE_READING_PAUSE:
-                time.sleep(estimate_reading_time(ai_thinking))
         elif ENABLE_EMBED:
             embeddings = load_embeddings(EMBED_OUT_PATH)
             while len(embeddings) <= cmd_index:
@@ -559,9 +558,6 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
         child.sendline(" " + cmd)
         prev_cmd = cmd
         cmd_index += 1
-
-    if ENABLE_READING_PAUSE:
-        time.sleep(1.0)  # artificially wait to allow reading
 
     if cmd_index >= len(plundered_hearts_commands):
         break

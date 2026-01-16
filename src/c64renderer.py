@@ -87,6 +87,7 @@ class C64Renderer:
         self.cursor_x = 0
         self.cursor_y = 0  # Content row index; status bar is separate.
         self.status_text = ""
+        self.status_bar_bg = C64_LIGHT_BLUE
         self.content_rows = C64_ROWS - C64_STATUS_ROWS
         self.buffer = [[" "] * C64_COLS for _ in range(self.content_rows)]
         self.glyphs = self._load_font(font_path)
@@ -810,12 +811,16 @@ class C64Renderer:
         """Update the persistent status/title bar shown on the top row."""
         self.status_text = (text or "").strip().upper()
 
+    def set_status_bar_color(self, color):
+        if color:
+            self.status_bar_bg = color
+
     def _draw_status_bar(self):
         if not self.status_text:
             return
         pygame.draw.rect(
             self.logical_surface,
-            C64_LIGHT_BLUE,
+            self.status_bar_bg,
             pygame.Rect(0, 0, LOGICAL_WIDTH, C64_CELL_SIZE_V),
         )
         truncated = self.status_text[:C64_COLS].ljust(C64_COLS)
