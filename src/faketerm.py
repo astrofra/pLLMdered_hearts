@@ -13,6 +13,7 @@ from c64renderer import C64Renderer
 
 # os.environ["OLLAMA_NO_CUDA"] = "1"
 
+AI_THINKING_STATUS = "<AI IS THINKING>"
 LLM_MODEL = 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
 ENABLE_LLM = True
 ENABLE_EMBED = False
@@ -187,6 +188,22 @@ def _handle_quit_shortcut():
             _exit_immediately()
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             _exit_immediately()
+
+def _status_with_ai_thinking(text):
+    if not text:
+        return text
+    match = re.search(r"\bScore:", text, re.IGNORECASE)
+    if not match:
+        return f"{text} " + AI_THINKING_STATUS
+    idx = match.start()
+    prefix = text[:idx].rstrip()
+    suffix = text[idx:]
+    new_prefix = f"{prefix} " + AI_THINKING_STATUS
+    if len(new_prefix) < idx:
+        new_prefix = new_prefix.ljust(idx)
+    elif len(new_prefix) > idx:
+        new_prefix = new_prefix[:idx]
+    return f"{new_prefix}{suffix}"
 
 
 def type_to_renderer(
@@ -518,8 +535,12 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
             llm_commentary = None
             retry = 0
             status_color = None
+            status_text = None
             if renderer:
                 status_color = getattr(renderer, "status_bar_bg", None)
+                status_text = LAST_STATUS_BAR
+                if status_text:
+                    renderer.set_status_bar(_status_with_ai_thinking(status_text))
                 renderer.set_status_bar_color((0, 0, 0))
                 renderer.render_frame()
             while llm_commentary is None:
@@ -536,6 +557,8 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                 retry = retry + 1
             if renderer and status_color:
                 renderer.set_status_bar_color(status_color)
+                if status_text:
+                    renderer.set_status_bar(status_text)
                 renderer.render_frame()
             ai_thinking = llm_commentary + "\n"
             print("<AI thinks : '" + ai_thinking + "'>\n")
