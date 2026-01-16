@@ -848,12 +848,12 @@ class C64Renderer:
             pygame.draw.rect(frame, cursor_color, cursor_rect)
         scaled_w = LOGICAL_WIDTH * self.scale * self.output_scale
         scaled_h = LOGICAL_HEIGHT * self.scale * self.output_scale
-        scaled = pygame.transform.scale(frame, (scaled_w, scaled_h)).convert_alpha()
+        scaled = pygame.transform.smoothscale(frame, (scaled_w, scaled_h)).convert_alpha()
         if self.fit_to_display:
             target_w = max(1, self.window_width - BORDER_THICKNESS * 2)
             target_h = max(1, self.window_height - BORDER_THICKNESS * 2)
             if scaled_w != target_w or scaled_h != target_h:
-                scaled = pygame.transform.scale(scaled, (target_w, target_h)).convert_alpha()
+                scaled = pygame.transform.smoothscale(scaled, (target_w, target_h)).convert_alpha()
         self.window.fill(C64_BORDER_COLOR)
         dest_x = self.render_offset_x + BORDER_THICKNESS
         dest_y = self.render_offset_y + BORDER_THICKNESS
