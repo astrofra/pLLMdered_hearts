@@ -14,7 +14,7 @@ from c64renderer import C64Renderer
 # os.environ["OLLAMA_NO_CUDA"] = "1"
 
 AI_THINKING_STATUS = "<AI IS THINKING>"
-LLM_MODEL = 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
+LLM_MODEL = 'ministral-3:14b' # 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
 ENABLE_LLM = True
 ENABLE_EMBED = False
 ENABLE_C64_RENDERER = True
@@ -119,12 +119,13 @@ def clean_output(text):
     return '\n'.join(clean_lines).strip()
 
 _KEY_SOUNDS = []
+_BUZZ_SOUNDS = []
 _MIXER_READY = False
 
 
 def _ensure_key_sounds_loaded():
     """Lazy-load key click sounds from assets/audio/*.ogg."""
-    global _KEY_SOUNDS, _MIXER_READY
+    global _KEY_SOUNDS, _BUZZ_SOUNDS, _MIXER_READY
     if _MIXER_READY:
         return
     if not pygame:
@@ -135,13 +136,16 @@ def _ensure_key_sounds_loaded():
         if not os.path.isdir(KEY_AUDIO_DIR):
             return
         oggs = [f for f in os.listdir(KEY_AUDIO_DIR) if f.lower().endswith(".ogg")]
-        oggs.sort()
-        for fname in oggs:
+        for fname in sorted(oggs):
             try:
                 sound = pygame.mixer.Sound(os.path.join(KEY_AUDIO_DIR, fname))
-                _KEY_SOUNDS.append(sound)
             except Exception:
                 continue
+            lower = fname.lower()
+            if lower.startswith("key_"):
+                _KEY_SOUNDS.append(sound)
+            elif lower.startswith("buzz_"):
+                _BUZZ_SOUNDS.append(sound)
         _MIXER_READY = True
     except Exception:
         _MIXER_READY = False
@@ -160,6 +164,25 @@ def _play_key_beep(ch=" "):
         except Exception:
             pass
     # Fallback: terminal bell
+    try:
+        sys.stdout.write("\a")
+        sys.stdout.flush()
+    except Exception:
+        pass
+
+
+def _play_buzz_beep(token=" "):
+    """Play a buzz sound mapped from ASCII; fallback to terminal bell."""
+    if not ENABLE_KEYCLICK_BEEP:
+        return
+    _ensure_key_sounds_loaded()
+    if _BUZZ_SOUNDS:
+        try:
+            idx = ord(token[0]) % len(_BUZZ_SOUNDS) if token else 0
+            _BUZZ_SOUNDS[idx].play()
+            return
+        except Exception:
+            pass
     try:
         sys.stdout.write("\a")
         sys.stdout.flush()
@@ -252,7 +275,11 @@ def type_to_renderer(
         distance = abs(ord(ch) - ord(prev))
         delay = max(min_delay, min(max_delay, distance * base_delay))
         if beep and chunk not in ["\n", " ", ">"]:
-            _play_key_beep(ch)
+            if word_mode:
+                if  len(chunk) > 6:
+                    _play_buzz_beep(chunk)
+            else:
+                _play_key_beep(ch)
         if chunk not in ["\n", ">"]:
             _sleep_with_events(delay)
         prev = ch
@@ -512,7 +539,7 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                     base_delay=1 / 60.0,
                     min_delay=1 / 240.0,
                     max_delay=1 / 30.0,
-                    beep=False,
+                    beep=True,
                     word_mode=True,
                 )
             else:
