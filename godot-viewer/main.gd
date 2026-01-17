@@ -16,6 +16,8 @@ const SUBTITLE_SHADOW_OFFSET_RATIO = 0.17
 const DEFAULT_VIDEO_ASPECT_RATIO = 16.0 / 9.0
 const VIDEO_OFFSET_RATIO = Vector2(0.45, 0.0)
 const VIDEO_MARGIN_RATIO = Vector2(0.025, 0.01)
+const SUBTITLE_PANEL_HEIGHT_RATIO = 0.2
+const SUBTITLE_PANEL_BOTTOM_MARGIN_RATIO = 0.04
 const WINDOW_SIZE = Vector2i(480, 1080)
 const WINDOW_POSITION = Vector2i(1440, 0)
 
@@ -42,6 +44,7 @@ func _apply_window_settings() -> void:
 	DisplayServer.window_set_size(WINDOW_SIZE)
 	DisplayServer.window_set_position(WINDOW_POSITION)
 	_apply_video_margins()
+	_apply_subtitle_panel_layout()
 
 func _apply_video_margins() -> void:
 	var window_size = DisplayServer.window_get_size()
@@ -53,6 +56,15 @@ func _apply_video_margins() -> void:
 	margin_container.offset_top = margin_y
 	margin_container.offset_right = -margin_x
 	margin_container.offset_bottom = -margin_y
+
+func _apply_subtitle_panel_layout() -> void:
+	var window_size = DisplayServer.window_get_size()
+	if window_size.x <= 0 or window_size.y <= 0:
+		window_size = WINDOW_SIZE
+	var height = int(round(float(window_size.y) * SUBTITLE_PANEL_HEIGHT_RATIO))
+	var bottom_margin = int(round(float(window_size.y) * SUBTITLE_PANEL_BOTTOM_MARGIN_RATIO))
+	subtitle_panel.offset_bottom = -bottom_margin
+	subtitle_panel.offset_top = subtitle_panel.offset_bottom - height
 
 func _apply_video_layout() -> void:
 	video_player.expand = true
@@ -151,7 +163,7 @@ func _parse_vtt(path: String) -> Array:
 	if file == null:
 		push_error("Failed to open subtitles: %s" % path)
 		return cues
-	var lines = file.get_as_text().split("\n", false)
+	var lines = file.get_as_text().split("\n")
 	var idx = 0
 	while idx < lines.size():
 		var line = lines[idx].strip_edges()
@@ -183,7 +195,7 @@ func _parse_txt(path: String) -> Array:
 	if file == null:
 		push_error("Failed to open subtitles: %s" % path)
 		return cues
-	var lines = file.get_as_text().split("\n", false)
+	var lines = file.get_as_text().split("\n")
 	var idx = 0
 	while idx < lines.size():
 		var line = lines[idx].strip_edges()
