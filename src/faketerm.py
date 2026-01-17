@@ -589,6 +589,17 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                 renderer.render_frame()
             ai_thinking = llm_commentary + "\n"
             print("<AI thinks : '" + ai_thinking + "'>\n")
+            if renderer and llm_commentary:
+                display_comment = "\n> " + llm_commentary.strip() + "\n"
+                type_to_renderer(
+                    renderer,
+                    display_comment,
+                    base_delay=1 / 60.0,
+                    min_delay=1 / 240.0,
+                    max_delay=1 / 30.0,
+                    beep=False,
+                    word_mode=True,
+                )
             llm_path = write_llm_markdown(llm_commentary)
             write_llm_timecode_metadata(llm_path, get_timecode_entry(timecode_cache, cmd_index))
         elif ENABLE_EMBED:
