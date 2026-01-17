@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://dfvkyx134nuvr"]
+[gd_scene load_steps=5 format=3 uid="uid://dfvkyx134nuvr"]
 
 [ext_resource type="Script" uid="uid://suecnuvgifcj" path="res://main.gd" id="1"]
 [ext_resource type="Shader" uid="uid://dx4d7h6usng4e" path="res://shaders/rounded_video.gdshader" id="2"]
@@ -6,6 +6,17 @@
 [sub_resource type="ShaderMaterial" id="1"]
 shader = ExtResource("2")
 shader_parameter/radius = 24.0
+
+[sub_resource type="StyleBoxFlat" id="2"]
+content_margin_left = 20.0
+content_margin_top = 10.0
+content_margin_right = 20.0
+content_margin_bottom = 10.0
+bg_color = Color(0, 0, 0, 0.6)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -39,3 +50,28 @@ ratio = 1.77778
 material = SubResource("1")
 layout_mode = 2
 expand = true
+
+[node name="Subtitles" type="Control" parent="."]
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="SubtitlePanel" type="PanelContainer" parent="Subtitles"]
+layout_mode = 0
+anchor_left = 0.1
+anchor_top = 1.0
+anchor_right = 0.9
+anchor_bottom = 1.0
+offset_top = -140.0
+offset_bottom = -40.0
+theme_override_styles/panel = SubResource("2")
+
+[node name="SubtitleLabel" type="Label" parent="Subtitles/SubtitlePanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
