@@ -2,9 +2,13 @@ import sys
 
 import pygame
 
+# Toggle for Windows "always on top" behavior.
+ENABLE_ALWAYS_ON_TOP = True
+ALWAYS_ON_TOP_REFRESH_MS = 100
+
 # Commodore 64 style display settings
-C64_COLS = 80
-C64_ROWS = 50
+C64_COLS = 78
+C64_ROWS = 30
 C64_STATUS_ROWS = 1  # Reserve top row for status/title bar.
 C64_CELL_SIZE_H = 8
 C64_CELL_SIZE_V = 10
@@ -29,6 +33,9 @@ class C64Renderer:
         fps=60,
         fullscreen=False,
         display_index=None,
+        always_on_top=None,
+        output_scale=1,
+        fit_to_display=False,
     ):
         if pygame is None:
             raise ImportError("pygame is required for the C64 renderer. Install pygame to enable it.")
@@ -38,15 +45,28 @@ class C64Renderer:
 
         self.fullscreen = bool(fullscreen)
         self.display_index = self._normalize_display_index(display_index)
+        if always_on_top is None:
+            self.always_on_top = ENABLE_ALWAYS_ON_TOP
+        else:
+            self.always_on_top = bool(always_on_top)
         self.display_size = self._get_display_size(self.display_index)
         self.fps = fps
+        try:
+            self.output_scale = max(1, int(output_scale))
+        except (TypeError, ValueError):
+            self.output_scale = 1
+        self.fit_to_display = bool(fit_to_display)
         self.scale = self._determine_scale(scale, self.display_size)
-        self.total_width = LOGICAL_WIDTH * self.scale + BORDER_THICKNESS * 2
-        self.total_height = LOGICAL_HEIGHT * self.scale + BORDER_THICKNESS * 2
+        self.total_width = LOGICAL_WIDTH * self.scale * self.output_scale + BORDER_THICKNESS * 2
+        self.total_height = LOGICAL_HEIGHT * self.scale * self.output_scale + BORDER_THICKNESS * 2
         if self.fullscreen and self.display_size:
             self.window_width, self.window_height = self.display_size
-            self.render_offset_x = max(0, (self.window_width - self.total_width) // 2)
-            self.render_offset_y = max(0, (self.window_height - self.total_height) // 2)
+            if self.fit_to_display:
+                self.render_offset_x = 0
+                self.render_offset_y = 0
+            else:
+                self.render_offset_x = max(0, (self.window_width - self.total_width) // 2)
+                self.render_offset_y = max(0, (self.window_height - self.total_height) // 2)
             window_flags = pygame.FULLSCREEN
         else:
             self.window_width = self.total_width
@@ -55,6 +75,11 @@ class C64Renderer:
             self.render_offset_y = 0
             window_flags = 0
         self.window = self._create_window(window_flags)
+        if self.always_on_top:
+            self._set_always_on_top()
+            self._next_topmost_check_ms = pygame.time.get_ticks() + ALWAYS_ON_TOP_REFRESH_MS
+        else:
+            self._next_topmost_check_ms = None
         self.clock = pygame.time.Clock()
 
         self.logical_surface = pygame.Surface((LOGICAL_WIDTH, LOGICAL_HEIGHT), pygame.SRCALPHA).convert_alpha()
@@ -62,10 +87,17 @@ class C64Renderer:
         self.cursor_x = 0
         self.cursor_y = 0  # Content row index; status bar is separate.
         self.status_text = ""
+        self.status_bar_bg = C64_LIGHT_BLUE
         self.content_rows = C64_ROWS - C64_STATUS_ROWS
         self.buffer = [[" "] * C64_COLS for _ in range(self.content_rows)]
+        self.default_fg = C64_LIGHT_GRAY
+        self.default_bg = C64_BLUE
+        self.row_fg_colors = [self.default_fg] * self.content_rows
+        self.row_bg_colors = [self.default_bg] * self.content_rows
         self.glyphs = self._load_font(font_path)
         self.default_glyph = self._render_pattern(self._fallback_pattern("?"))
+        self._glyph_cache = {self.default_fg: self.glyphs}
+        self._default_glyph_cache = {self.default_fg: self.default_glyph}
 
     def _determine_scale(self, forced_scale, display_size=None):
         if forced_scale:
@@ -130,6 +162,41 @@ class C64Renderer:
         except TypeError:
             pass
         return pygame.display.set_mode((self.window_width, self.window_height), window_flags)
+
+    def _set_always_on_top(self):
+        if not sys.platform.startswith("win"):
+            return
+        try:
+            import ctypes
+
+            wm_info = pygame.display.get_wm_info()
+            hwnd = wm_info.get("window")
+            if not hwnd:
+                return
+            HWND_TOPMOST = -1
+            SWP_NOMOVE = 0x0002
+            SWP_NOSIZE = 0x0001
+            SWP_SHOWWINDOW = 0x0040
+            ctypes.windll.user32.SetWindowPos(
+                hwnd,
+                HWND_TOPMOST,
+                0,
+                0,
+                0,
+                0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW,
+            )
+        except Exception:
+            pass
+
+    def _refresh_always_on_top(self):
+        if not self.always_on_top or self._next_topmost_check_ms is None:
+            return
+        now_ms = pygame.time.get_ticks()
+        if now_ms < self._next_topmost_check_ms:
+            return
+        self._set_always_on_top()
+        self._next_topmost_check_ms = now_ms + ALWAYS_ON_TOP_REFRESH_MS
 
     def _load_font(self, font_path):
         # Always use the built-in placeholder font to avoid external dependencies.
@@ -211,6 +278,15 @@ class C64Renderer:
                 "XXXXX",
             ],
             "'": [
+                "  X  ",
+                "  X  ",
+                "  X  ",
+                "     ",
+                "     ",
+                "     ",
+                "     ",
+            ],
+            "’": [
                 "  X  ",
                 "  X  ",
                 "  X  ",
@@ -693,6 +769,7 @@ class C64Renderer:
             upper_char = char.upper()
             pattern = letters.get(upper_char) or self._fallback_pattern(char) or self._fallback_pattern("?")
             glyphs[code] = self._render_pattern(pattern)
+        glyphs[ord("’")] = glyphs.get(ord("'"), self._render_pattern(self._fallback_pattern("'")))
         return glyphs
 
     def _render_pattern(self, pattern_lines):
@@ -710,6 +787,8 @@ class C64Renderer:
         self.buffer = [[" "] * C64_COLS for _ in range(self.content_rows)]
         self.cursor_x = 0
         self.cursor_y = 0
+        self.row_fg_colors = [self.default_fg] * self.content_rows
+        self.row_bg_colors = [self.default_bg] * self.content_rows
 
     def _newline(self):
         self.cursor_x = 0
@@ -717,11 +796,58 @@ class C64Renderer:
         if self.cursor_y >= self.content_rows:
             self.buffer.pop(0)
             self.buffer.append([" "] * C64_COLS)
+            self.row_fg_colors.pop(0)
+            self.row_bg_colors.pop(0)
+            self.row_fg_colors.append(self.default_fg)
+            self.row_bg_colors.append(self.default_bg)
             self.cursor_y = self.content_rows - 1
 
     def _glyph_for_char(self, char):
         code = ord(char) if char else ord("?")
         return self.glyphs.get(code, self.default_glyph)
+
+    def _set_row_style(self, row_index, fg_color=None, bg_color=None):
+        if fg_color is not None:
+            self.row_fg_colors[row_index] = fg_color
+        if bg_color is not None:
+            self.row_bg_colors[row_index] = bg_color
+
+    def _tint_surface(self, surface, color):
+        tinted = pygame.Surface(surface.get_size(), pygame.SRCALPHA).convert_alpha()
+        width, height = surface.get_size()
+        for y in range(height):
+            for x in range(width):
+                if surface.get_at((x, y)).a:
+                    tinted.set_at((x, y), (*color, 255))
+        return tinted
+
+    def _tint_glyphs(self, color):
+        tinted = {}
+        for code, glyph in self.glyphs.items():
+            tinted[code] = self._tint_surface(glyph, color)
+        return tinted
+
+    def _get_glyphs_for_color(self, color):
+        if color is None:
+            return self.glyphs
+        key = tuple(color)
+        cached = self._glyph_cache.get(key)
+        if cached:
+            return cached
+        tinted = self._tint_glyphs(key)
+        self._glyph_cache[key] = tinted
+        return tinted
+
+    def _get_default_glyph_for_color(self, color):
+        if color is None:
+            return self.default_glyph
+        key = tuple(color)
+        cached = self._default_glyph_cache.get(key)
+        if cached:
+            return cached
+        tinted = self._tint_surface(self.default_glyph, key)
+        self._default_glyph_cache[key] = tinted
+        return tinted
 
     def process_events(self):
         for event in pygame.event.get():
@@ -729,14 +855,20 @@ class C64Renderer:
                 pygame.quit()
                 sys.exit(0)
 
-    def write(self, text):
+    def write(self, text, fg_color=None, bg_color=None):
         for ch in text:
             if ch == "\n":
                 self._newline()
+                if fg_color is not None or bg_color is not None:
+                    self._set_row_style(self.cursor_y, fg_color, bg_color)
                 continue
             if ch == "\f":
                 self.clear()
+                if fg_color is not None or bg_color is not None:
+                    self._set_row_style(self.cursor_y, fg_color, bg_color)
                 continue
+            if fg_color is not None or bg_color is not None:
+                self._set_row_style(self.cursor_y, fg_color, bg_color)
             sanitized = ch
             if not sanitized.isprintable() or sanitized == "\r":
                 sanitized = " "
@@ -745,17 +877,23 @@ class C64Renderer:
             self.cursor_x += 1
             if self.cursor_x >= C64_COLS:
                 self._newline()
+                if fg_color is not None or bg_color is not None:
+                    self._set_row_style(self.cursor_y, fg_color, bg_color)
 
     def set_status_bar(self, text):
         """Update the persistent status/title bar shown on the top row."""
         self.status_text = (text or "").strip().upper()
+
+    def set_status_bar_color(self, color):
+        if color:
+            self.status_bar_bg = color
 
     def _draw_status_bar(self):
         if not self.status_text:
             return
         pygame.draw.rect(
             self.logical_surface,
-            C64_LIGHT_BLUE,
+            self.status_bar_bg,
             pygame.Rect(0, 0, LOGICAL_WIDTH, C64_CELL_SIZE_V),
         )
         truncated = self.status_text[:C64_COLS].ljust(C64_COLS)
@@ -767,13 +905,30 @@ class C64Renderer:
         self.logical_surface.fill(C64_BLUE)
         self._draw_status_bar()
         for y, row in enumerate(self.buffer):
+            bg_color = self.row_bg_colors[y]
+            if bg_color != C64_BLUE:
+                pygame.draw.rect(
+                    self.logical_surface,
+                    bg_color,
+                    pygame.Rect(
+                        0,
+                        (y + C64_STATUS_ROWS) * C64_CELL_SIZE_V,
+                        LOGICAL_WIDTH,
+                        C64_CELL_SIZE_V,
+                    ),
+                )
+            glyphs = self._get_glyphs_for_color(self.row_fg_colors[y])
             for x, ch in enumerate(row):
-                glyph = self._glyph_for_char(ch)
+                code = ord(ch) if ch else ord("?")
+                glyph = glyphs.get(code)
+                if glyph is None:
+                    glyph = self._get_default_glyph_for_color(self.row_fg_colors[y])
                 self.logical_surface.blit(
                     glyph, (x * C64_CELL_SIZE_H, (y + C64_STATUS_ROWS) * C64_CELL_SIZE_V)
                 )
 
     def render_frame(self, show_cursor=False):
+        self._refresh_always_on_top()
         self._draw_buffer()
         frame = self.logical_surface.copy()
         if show_cursor:
@@ -785,9 +940,14 @@ class C64Renderer:
                 C64_CELL_SIZE_V,
             )
             pygame.draw.rect(frame, cursor_color, cursor_rect)
-        scaled = pygame.transform.scale(
-            frame, (LOGICAL_WIDTH * self.scale, LOGICAL_HEIGHT * self.scale)
-        ).convert_alpha()
+        scaled_w = LOGICAL_WIDTH * self.scale * self.output_scale
+        scaled_h = LOGICAL_HEIGHT * self.scale * self.output_scale
+        scaled = pygame.transform.smoothscale(frame, (scaled_w, scaled_h)).convert_alpha()
+        if self.fit_to_display:
+            target_w = max(1, self.window_width - BORDER_THICKNESS * 2)
+            target_h = max(1, self.window_height - BORDER_THICKNESS * 2)
+            if scaled_w != target_w or scaled_h != target_h:
+                scaled = pygame.transform.smoothscale(scaled, (target_w, target_h)).convert_alpha()
         self.window.fill(C64_BORDER_COLOR)
         dest_x = self.render_offset_x + BORDER_THICKNESS
         dest_y = self.render_offset_y + BORDER_THICKNESS

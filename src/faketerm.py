@@ -1,9 +1,9 @@
 import json
 import os
-import random
 import re
 import sys
 import time
+import unicodedata
 
 import ollama
 import pexpect
@@ -14,31 +14,33 @@ from c64renderer import C64Renderer
 
 # os.environ["OLLAMA_NO_CUDA"] = "1"
 
-## FIXME "[Press RETURN or ENTER to continue.]"
-
-LLM_MODEL = 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
+AI_THINKING_STATUS = "<AI IS THINKING>"
+AI_COMMENT_LABEL = "AI SAYS:"
+AI_COMMENT_FG = (255, 255, 255)
+AI_COMMENT_BG = (0, 0, 0)
+LLM_MODEL = 'ministral-3:14b' # 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
 ENABLE_LLM = True
-ENABLE_READING_PAUSE = True
+ENABLE_EMBED = False
 ENABLE_C64_RENDERER = True
 ENABLE_KEYCLICK_BEEP = True
-ENABLE_C64_FULLSCREEN = False
-C64_DISPLAY_INDEX = None  # 1-based display number (1, 2, 3); None uses the primary monitor.
+ENABLE_C64_FULLSCREEN = True
+C64_DISPLAY_INDEX = 2  # 1-based display number (1, 2, 3); None uses the primary monitor.
+C64_OUTPUT_SCALE = 2
+C64_FIT_TO_DISPLAY = True
 
 C64_FONT_PATH = None  # Using built-in fallback font; no external sprite sheet required.
 KEY_AUDIO_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "audio")
-LLM_OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "llm_out")
+EMBED_MODEL = "qwen3-embedding"
+EMBED_OUT_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "game-embeddings.json")
+
+if ENABLE_LLM and ENABLE_EMBED:
+    raise ValueError("ENABLE_LLM and ENABLE_EMBED are mutually exclusive.")
 
 def llm_response_is_valid(llm_commentary):
     if llm_commentary is None:
         return False
     
     return True
-
-def estimate_reading_time(text, wps=4.0, min_delay=0.3, max_delay=5.0):
-    """Estimate a human-readable delay (in seconds) based on word count."""
-    word_count = len(text.strip().split())
-    delay = word_count / wps
-    return max(min_delay, min(delay, max_delay))  # Clamp delay
 
 def extract_and_parse_json(text):
     """
@@ -66,6 +68,15 @@ def extract_and_parse_json(text):
     else:
         print("No JSON block found.")
         return None
+
+def sanitize_renderer_text(text):
+    if text is None:
+        return ""
+    placeholder = "__RSQ__"
+    text = text.replace("’", placeholder)
+    normalized = unicodedata.normalize("NFKD", text)
+    ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
+    return ascii_text.replace(placeholder, "’")
 
 # Match ANSI escape sequences like ESC[31m or ESC[2J
 ansi_escape = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
@@ -119,12 +130,13 @@ def clean_output(text):
     return '\n'.join(clean_lines).strip()
 
 _KEY_SOUNDS = []
+_BUZZ_SOUNDS = []
 _MIXER_READY = False
 
 
 def _ensure_key_sounds_loaded():
     """Lazy-load key click sounds from assets/audio/*.ogg."""
-    global _KEY_SOUNDS, _MIXER_READY
+    global _KEY_SOUNDS, _BUZZ_SOUNDS, _MIXER_READY
     if _MIXER_READY:
         return
     if not pygame:
@@ -135,13 +147,16 @@ def _ensure_key_sounds_loaded():
         if not os.path.isdir(KEY_AUDIO_DIR):
             return
         oggs = [f for f in os.listdir(KEY_AUDIO_DIR) if f.lower().endswith(".ogg")]
-        oggs.sort()
-        for fname in oggs:
+        for fname in sorted(oggs):
             try:
                 sound = pygame.mixer.Sound(os.path.join(KEY_AUDIO_DIR, fname))
-                _KEY_SOUNDS.append(sound)
             except Exception:
                 continue
+            lower = fname.lower()
+            if lower.startswith("key_"):
+                _KEY_SOUNDS.append(sound)
+            elif lower.startswith("buzz_"):
+                _BUZZ_SOUNDS.append(sound)
         _MIXER_READY = True
     except Exception:
         _MIXER_READY = False
@@ -167,6 +182,64 @@ def _play_key_beep(ch=" "):
         pass
 
 
+def _play_buzz_beep(token=" "):
+    """Play a buzz sound mapped from ASCII; fallback to terminal bell."""
+    if not ENABLE_KEYCLICK_BEEP:
+        return
+    _ensure_key_sounds_loaded()
+    if _BUZZ_SOUNDS:
+        try:
+            idx = ord(token[0]) % len(_BUZZ_SOUNDS) if token else 0
+            _BUZZ_SOUNDS[idx].play()
+            return
+        except Exception:
+            pass
+    try:
+        sys.stdout.write("\a")
+        sys.stdout.flush()
+    except Exception:
+        pass
+
+
+def _exit_immediately():
+    try:
+        if child is not None:
+            child.terminate(force=True)
+    except Exception:
+        pass
+    try:
+        pygame.quit()
+    except Exception:
+        pass
+    sys.exit(0)
+
+
+def _handle_quit_shortcut():
+    if not renderer or pygame is None:
+        return
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            _exit_immediately()
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            _exit_immediately()
+
+def _status_with_ai_thinking(text):
+    if not text:
+        return text
+    match = re.search(r"\bScore:", text, re.IGNORECASE)
+    if not match:
+        return f"{text} " + AI_THINKING_STATUS
+    idx = match.start()
+    prefix = text[:idx].rstrip()
+    suffix = text[idx:]
+    new_prefix = f"{prefix} " + AI_THINKING_STATUS
+    if len(new_prefix) < idx:
+        new_prefix = new_prefix.ljust(idx)
+    elif len(new_prefix) > idx:
+        new_prefix = new_prefix[:idx]
+    return f"{new_prefix}{suffix}"
+
+
 def type_to_renderer(
     renderer,
     text,
@@ -175,6 +248,8 @@ def type_to_renderer(
     max_delay=0.20,
     beep=True,
     word_mode=False,
+    fg_color=None,
+    bg_color=None,
 ):
     """
     Simulate typing to the renderer: emit characters one by one with a delay
@@ -187,7 +262,7 @@ def type_to_renderer(
             return
         end_time = time.time() + delay
         while time.time() < end_time:
-            renderer.process_events()
+            _handle_quit_shortcut()
             remaining = end_time - time.time()
             if remaining <= 0:
                 break
@@ -200,10 +275,10 @@ def type_to_renderer(
     for chunk in chunks:
         if not chunk:
             continue
-        renderer.process_events()
+        _handle_quit_shortcut()
         if renderer:
             renderer.render_frame(show_cursor=True)
-        renderer.write(chunk)
+        renderer.write(chunk, fg_color=fg_color, bg_color=bg_color)
         typed += 1
         renderer.render_frame(show_cursor=typed < total_chunks)
         # Use the last non-newline character of the chunk to keep delays consistent.
@@ -213,27 +288,43 @@ def type_to_renderer(
         distance = abs(ord(ch) - ord(prev))
         delay = max(min_delay, min(max_delay, distance * base_delay))
         if beep and chunk not in ["\n", " ", ">"]:
-            _play_key_beep(ch)
+            if word_mode:
+                if  len(chunk) > 6:
+                    _play_buzz_beep(chunk)
+            else:
+                _play_key_beep(ch)
         if chunk not in ["\n", ">"]:
             _sleep_with_events(delay)
         prev = ch
 
 
-def write_llm_markdown(text):
-    """Persist LLM commentary as a timestamped markdown file in llm_out/."""
+def embed_text(text):
     if text is None:
         return None
-    try:
-        os.makedirs(LLM_OUT_DIR, exist_ok=True)
-        timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-        filename = f"{timestamp}.md"
-        path = os.path.join(LLM_OUT_DIR, filename)
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(text)
-        return path
-    except Exception as exc:
-        print(f"Failed to write LLM output: {exc}")
+    text = text.strip()
+    if not text:
         return None
+    response = ollama.embeddings(model=EMBED_MODEL, prompt=text)
+    return response.get("embedding")
+
+
+def load_embeddings(path):
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+        if isinstance(data, list):
+            return data
+    except Exception:
+        pass
+    return []
+
+
+def write_embeddings(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(data, handle, ensure_ascii=True)
 
 
 def build_prompt(prev_output, next_cmd):
@@ -246,9 +337,10 @@ def build_prompt(prev_output, next_cmd):
     prompt = prompt + (prev_output or "")
 
     prompt = prompt + "From the known solution of the game, you know the next good command will be : " + (next_cmd or "")
-    prompt = prompt + "Please give a strong feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, then explain, IN FRENCH ARGOT, FIRST PERSON, what to do and why this is the best thing in this context."
-    prompt = prompt + "When thinking out loud, you refer yourself (and yourself only) as 'meuf' or 'frere'."
-    prompt = prompt + "250 words maximum."
+    prompt = prompt + "Please give a strong feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, explaining why you would do this in this context."
+    prompt = prompt + "When thinking out loud, you refer yourself (and yourself only) as 'meuf'."
+    prompt = prompt + "Slang is okay, but avoid being to rude."
+    prompt = prompt + "One short paragraph maximum."
     return prompt
 
 # Official Amiga solution
@@ -307,6 +399,27 @@ The game can be played to completion with four potential endings. However, in on
 There was a divide within Infocom regarding whether interactive fiction protagonists should be "audience stand-ins", or whether they should have defined characters. For instance, after negative reaction to the anti-hero protagonist of Infidel, implementor Michael Berlyn concluded that "People really don’t want to know who they are [in a game]." Plundered Hearts falls on the opposite side of the spectrum. Lady Dimsford's capable and spunky personality subverts the game's "damsel in distress" setup.
 """
 
+cmd_replace_dict = {
+    "E": "EAST",
+    "W": "WEST",
+    "N": "NORTH",
+    "S": "SOUTH",
+    "Z": "WAIT",
+    "NE": "NORTHEAST",
+    "NW": "NORTHWEST",
+    "SE": "SOUTHEAST",
+    "SW": "SOUTHWEST", 
+    "U": "UP",
+    "D": "DOWN",
+    "L": "LOOK"
+}
+
+def enhance_game_command(cmd):
+    cmd = cmd.upper()
+    if cmd in cmd_replace_dict:
+        return cmd_replace_dict[cmd]
+    return cmd
+
 # run frotz through a terminal emulator, using the ascii mode
 # child = pexpect.spawn("frotz -p roms/PLUNDERE.z3", encoding='utf-8', timeout=5)
 from pexpect.popen_spawn import PopenSpawn
@@ -326,6 +439,8 @@ if ENABLE_C64_RENDERER:
             fps=50,
             fullscreen=ENABLE_C64_FULLSCREEN,
             display_index=display_index,
+            output_scale=C64_OUTPUT_SCALE,
+            fit_to_display=C64_FIT_TO_DISPLAY,
         )
     except Exception as exc:
         print(f"Unable to start C64 renderer: {exc}")
@@ -335,11 +450,11 @@ prev_output = ""
 cmd_index = 0
 prev_cmd = None
 pending_intro_ack = True
+last_cleaned = ""
 
 # Unified loop for reading, displaying, and responding.
 while True:  # for step, cmd in enumerate(plundered_hearts_commands):
-    if renderer:
-        renderer.process_events()
+    _handle_quit_shortcut()
 
     raw_output = ""
     start_time = time.time()
@@ -368,6 +483,7 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
 
     if raw_output:
         cleaned = clean_output(raw_output)
+        last_cleaned = cleaned
         if renderer and LAST_STATUS_BAR:
             renderer.set_status_bar(LAST_STATUS_BAR)
         if renderer:
@@ -378,7 +494,7 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                     base_delay=1 / 60.0,
                     min_delay=1 / 240.0,
                     max_delay=1 / 30.0,
-                    beep=False,
+                    beep=True,
                     word_mode=True,
                 )
             else:
@@ -394,12 +510,21 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
 
     # Only proceed if the game shows a prompt and we still have commands to send.
     if ">" in raw_output and cmd_index < len(plundered_hearts_commands):
-        cmd = plundered_hearts_commands[cmd_index]
+        cmd = enhance_game_command(plundered_hearts_commands[cmd_index])
 
         if ENABLE_LLM:
             prompt = build_prompt(prev_output, cmd)
             llm_commentary = None
             retry = 0
+            status_color = None
+            status_text = None
+            if renderer:
+                status_color = getattr(renderer, "status_bar_bg", None)
+                status_text = LAST_STATUS_BAR
+                if status_text:
+                    renderer.set_status_bar(_status_with_ai_thinking(status_text))
+                renderer.set_status_bar_color((0, 0, 0))
+                renderer.render_frame()
             while llm_commentary is None:
                 response = ollama.chat(
                     model=LLM_MODEL,
@@ -412,11 +537,48 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                 if retry > 0:
                     print("Retry #" + str(retry))
                 retry = retry + 1
+            if renderer and status_color:
+                renderer.set_status_bar_color(status_color)
+                if status_text:
+                    renderer.set_status_bar(status_text)
+                renderer.render_frame()
             ai_thinking = llm_commentary + "\n"
             print("<AI thinks : '" + ai_thinking + "'>\n")
-            write_llm_markdown(llm_commentary)
-            if ENABLE_READING_PAUSE:
-                time.sleep(estimate_reading_time(ai_thinking))
+            if renderer and llm_commentary:
+                cleaned_comment = sanitize_renderer_text(llm_commentary).strip()
+                if cleaned_comment:
+                    display_comment = "\n> " + AI_COMMENT_LABEL + " " + cleaned_comment
+                else:
+                    display_comment = "\n> " + AI_COMMENT_LABEL
+                type_to_renderer(
+                    renderer,
+                    display_comment,
+                    base_delay=1 / 60.0,
+                    min_delay=1 / 240.0,
+                    max_delay=1 / 30.0,
+                    beep=False,
+                    word_mode=True,
+                    fg_color=AI_COMMENT_FG,
+                    bg_color=AI_COMMENT_BG,
+                )
+                type_to_renderer(
+                    renderer,
+                    "\n",
+                    base_delay=1 / 60.0,
+                    min_delay=1 / 240.0,
+                    max_delay=1 / 30.0,
+                    beep=False,
+                    word_mode=True,
+                )
+        elif ENABLE_EMBED:
+            embeddings = load_embeddings(EMBED_OUT_PATH)
+            while len(embeddings) <= cmd_index:
+                embeddings.append(None)
+            embeddings[cmd_index] = {
+                "cleaned": embed_text(last_cleaned),
+                "cmd": embed_text(cmd),
+            }
+            write_embeddings(EMBED_OUT_PATH, embeddings)
 
         display_cmd = ">> " + cmd.strip()
         print(display_cmd + "\n")
@@ -425,9 +587,6 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
         child.sendline(" " + cmd)
         prev_cmd = cmd
         cmd_index += 1
-
-    if ENABLE_READING_PAUSE:
-        time.sleep(1.0)  # artificially wait to allow reading
 
     if cmd_index >= len(plundered_hearts_commands):
         break
