@@ -13,9 +13,8 @@ const SUBTITLE_FONT_PATH = "res://fonts/RobotoCondensed-Regular.ttf"
 const SUBTITLE_FONT_SIZE = 28
 const SUBTITLE_SHADOW_OFFSET_RATIO = 0.17
 const DEFAULT_VIDEO_ASPECT_RATIO = 16.0 / 9.0
-const DEFAULT_VERTICAL_RATIO = 480 / 1080
-const WINDOW_SIZE = Vector2i(DEFAULT_VERTICAL_RATIO * DEFAULT_VERTICAL_RATIO, 1080)
-const WINDOW_POSITION = Vector2i(0, 0)
+const WINDOW_SIZE = Vector2i(480, 1080)
+const WINDOW_POSITION = Vector2i(1440, 0)
 
 var subtitles: Array = []
 var current_subtitle_index := -1
