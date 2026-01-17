@@ -1,14 +1,15 @@
+import os
 import sys
 
 import pygame
 
 # Toggle for Windows "always on top" behavior.
 ENABLE_ALWAYS_ON_TOP = True
-ALWAYS_ON_TOP_REFRESH_MS = 100
+ALWAYS_ON_TOP_REFRESH_MS = 1000
 
 # Commodore 64 style display settings
 C64_COLS = 78
-C64_ROWS = 30
+C64_ROWS = 40
 C64_STATUS_ROWS = 1  # Reserve top row for status/title bar.
 C64_CELL_SIZE_H = 8
 C64_CELL_SIZE_V = 10
@@ -36,6 +37,9 @@ class C64Renderer:
         always_on_top=None,
         output_scale=1,
         fit_to_display=False,
+        window_size=None,
+        window_position=None,
+        borderless=False,
     ):
         if pygame is None:
             raise ImportError("pygame is required for the C64 renderer. Install pygame to enable it.")
@@ -45,6 +49,9 @@ class C64Renderer:
 
         self.fullscreen = bool(fullscreen)
         self.display_index = self._normalize_display_index(display_index)
+        self.window_size = self._normalize_window_size(window_size)
+        self.window_position = self._normalize_window_position(window_position)
+        self.borderless = bool(borderless)
         if always_on_top is None:
             self.always_on_top = ENABLE_ALWAYS_ON_TOP
         else:
@@ -69,11 +76,26 @@ class C64Renderer:
                 self.render_offset_y = max(0, (self.window_height - self.total_height) // 2)
             window_flags = pygame.FULLSCREEN
         else:
-            self.window_width = self.total_width
-            self.window_height = self.total_height
-            self.render_offset_x = 0
-            self.render_offset_y = 0
+            if self.window_size:
+                self.window_width, self.window_height = self.window_size
+                if self.fit_to_display:
+                    self.render_offset_x = 0
+                    self.render_offset_y = 0
+                else:
+                    self.render_offset_x = max(0, (self.window_width - self.total_width) // 2)
+                    self.render_offset_y = max(0, (self.window_height - self.total_height) // 2)
+                self.total_width = self.window_width
+                self.total_height = self.window_height
+            else:
+                self.window_width = self.total_width
+                self.window_height = self.total_height
+                self.render_offset_x = 0
+                self.render_offset_y = 0
             window_flags = 0
+        if self.borderless and not self.fullscreen:
+            window_flags |= pygame.NOFRAME
+        if self.window_position and not self.fullscreen:
+            self._set_window_position_env(self.window_position)
         self.window = self._create_window(window_flags)
         if self.always_on_top:
             self._set_always_on_top()
@@ -134,6 +156,35 @@ class C64Renderer:
         if index >= num_displays:
             return None
         return index
+
+    def _normalize_window_size(self, window_size):
+        if not window_size:
+            return None
+        try:
+            width, height = window_size
+            width = int(width)
+            height = int(height)
+            if width <= 0 or height <= 0:
+                return None
+            return (width, height)
+        except (TypeError, ValueError):
+            return None
+
+    def _normalize_window_position(self, window_position):
+        if window_position is None:
+            return None
+        try:
+            x, y = window_position
+            return (int(x), int(y))
+        except (TypeError, ValueError):
+            return None
+
+    def _set_window_position_env(self, position):
+        try:
+            os.environ["SDL_VIDEO_WINDOW_POS"] = f"{position[0]},{position[1]}"
+            os.environ.pop("SDL_VIDEO_CENTERED", None)
+        except Exception:
+            pass
 
     def _get_display_size(self, display_index):
         if display_index is not None:

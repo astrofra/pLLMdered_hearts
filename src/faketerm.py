@@ -23,8 +23,11 @@ ENABLE_LLM = True
 ENABLE_EMBED = False
 ENABLE_C64_RENDERER = True
 ENABLE_KEYCLICK_BEEP = True
-ENABLE_C64_FULLSCREEN = True
-C64_DISPLAY_INDEX = 2  # 1-based display number (1, 2, 3); None uses the primary monitor.
+ENABLE_C64_FULLSCREEN = False
+C64_DISPLAY_INDEX = 1  # 1-based display number (1, 2, 3); None uses the primary monitor.
+C64_WINDOW_UNDECORATED = True
+C64_WINDOW_SIZE = (1440, 1080)
+C64_WINDOW_POSITION = (0, 0)
 C64_OUTPUT_SCALE = 2
 C64_FIT_TO_DISPLAY = True
 
@@ -439,6 +442,9 @@ if ENABLE_C64_RENDERER:
             fps=50,
             fullscreen=ENABLE_C64_FULLSCREEN,
             display_index=display_index,
+            window_size=C64_WINDOW_SIZE,
+            window_position=C64_WINDOW_POSITION,
+            borderless=C64_WINDOW_UNDECORATED,
             output_scale=C64_OUTPUT_SCALE,
             fit_to_display=C64_FIT_TO_DISPLAY,
         )
