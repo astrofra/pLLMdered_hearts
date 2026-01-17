@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import time
+import unicodedata
 
 import ollama
 import pexpect
@@ -66,6 +67,15 @@ def extract_and_parse_json(text):
     else:
         print("No JSON block found.")
         return None
+
+def sanitize_renderer_text(text):
+    if text is None:
+        return ""
+    placeholder = "__RSQ__"
+    text = text.replace("’", placeholder)
+    normalized = unicodedata.normalize("NFKD", text)
+    ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
+    return ascii_text.replace(placeholder, "’")
 
 # Match ANSI escape sequences like ESC[31m or ESC[2J
 ansi_escape = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
@@ -591,7 +601,8 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
             ai_thinking = llm_commentary + "\n"
             print("<AI thinks : '" + ai_thinking + "'>\n")
             if renderer and llm_commentary:
-                display_comment = "\n> " + llm_commentary.strip() + "\n"
+                cleaned_comment = sanitize_renderer_text(llm_commentary).strip()
+                display_comment = "\n> " + cleaned_comment + "\n"
                 type_to_renderer(
                     renderer,
                     display_comment,

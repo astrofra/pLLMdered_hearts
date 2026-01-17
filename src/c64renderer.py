@@ -280,6 +280,15 @@ class C64Renderer:
                 "     ",
                 "     ",
             ],
+            "’": [
+                "  X  ",
+                "  X  ",
+                "  X  ",
+                "     ",
+                "     ",
+                "     ",
+                "     ",
+            ],
             '"': [
                 " X X ",
                 " X X ",
@@ -754,6 +763,7 @@ class C64Renderer:
             upper_char = char.upper()
             pattern = letters.get(upper_char) or self._fallback_pattern(char) or self._fallback_pattern("?")
             glyphs[code] = self._render_pattern(pattern)
+        glyphs[ord("’")] = glyphs.get(ord("'"), self._render_pattern(self._fallback_pattern("'")))
         return glyphs
 
     def _render_pattern(self, pattern_lines):
