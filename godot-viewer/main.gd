@@ -1,6 +1,7 @@
 extends Control
 
 @onready var video_player: VideoStreamPlayer = $Margin/VideoFrame/VideoPlayer
+@onready var video_frame: Control = $Margin/VideoFrame
 @onready var subtitle_label: Label = $Subtitles/SubtitlePanel/SubtitleLabel
 @onready var subtitle_shadow_label: Label = $Subtitles/SubtitlePanel/SubtitleShadowLabel
 @onready var subtitle_panel: Control = $Subtitles/SubtitlePanel
@@ -11,21 +12,69 @@ const SUBTITLE_TXT_PATH = "res://video/abriggs-itw.txt"
 const SUBTITLE_FONT_PATH = "res://fonts/RobotoCondensed-Regular.ttf"
 const SUBTITLE_FONT_SIZE = 24
 const SUBTITLE_SHADOW_OFFSET_RATIO = 0.17
+const DEFAULT_VIDEO_ASPECT_RATIO = 16.0 / 9.0
+const WINDOW_SIZE = Vector2i(356, 800)
+const WINDOW_POSITION = Vector2i(0, 0)
 
 var subtitles: Array = []
 var current_subtitle_index := -1
 
 func _ready() -> void:
+	_apply_window_settings()
 	var stream = load(VIDEO_PATH)
 	if stream == null:
 		push_error("Video not found or unsupported: %s" % VIDEO_PATH)
 		return
 	video_player.stream = stream
+	_apply_video_layout()
 	video_player.play()
+	call_deferred("_update_video_cover")
 	subtitle_panel.visible = false
 	subtitles = _load_subtitles()
 	_apply_subtitle_style()
 	_update_subtitle(0.0)
+
+func _apply_window_settings() -> void:
+	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, true)
+	DisplayServer.window_set_size(WINDOW_SIZE)
+	DisplayServer.window_set_position(WINDOW_POSITION)
+
+func _apply_video_layout() -> void:
+	video_player.expand = true
+	video_player.anchor_left = 0.0
+	video_player.anchor_top = 0.0
+	video_player.anchor_right = 0.0
+	video_player.anchor_bottom = 0.0
+	if not video_frame.resized.is_connected(_update_video_cover):
+		video_frame.resized.connect(_update_video_cover)
+	_update_video_cover()
+
+func _update_video_cover() -> void:
+	var frame_size = video_frame.size
+	if frame_size.x <= 0.0 or frame_size.y <= 0.0:
+		return
+	var aspect = _get_video_aspect_ratio()
+	if aspect <= 0.0:
+		return
+	var target_size = Vector2.ZERO
+	var frame_aspect = frame_size.x / frame_size.y
+	if frame_aspect < aspect:
+		target_size.y = frame_size.y
+		target_size.x = frame_size.y * aspect
+	else:
+		target_size.x = frame_size.x
+		target_size.y = frame_size.x / aspect
+	video_player.size = target_size
+	video_player.position = (frame_size - target_size) * 0.5
+
+func _get_video_aspect_ratio() -> float:
+	if video_player.has_method("get_video_texture"):
+		var texture = video_player.get_video_texture()
+		if texture != null:
+			var tex_size = texture.get_size()
+			if tex_size.y > 0.0:
+				return float(tex_size.x) / float(tex_size.y)
+	return DEFAULT_VIDEO_ASPECT_RATIO
 
 func _apply_subtitle_style() -> void:
 	var font = load(SUBTITLE_FONT_PATH) as FontFile
@@ -61,6 +110,11 @@ func _process(_delta: float) -> void:
 		return
 	var current_time = _get_video_time()
 	_update_subtitle(current_time)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_ESCAPE:
+			get_tree().quit()
 
 func _load_subtitles() -> Array:
 	if FileAccess.file_exists(SUBTITLE_VTT_PATH):
