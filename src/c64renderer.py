@@ -90,8 +90,14 @@ class C64Renderer:
         self.status_bar_bg = C64_LIGHT_BLUE
         self.content_rows = C64_ROWS - C64_STATUS_ROWS
         self.buffer = [[" "] * C64_COLS for _ in range(self.content_rows)]
+        self.default_fg = C64_LIGHT_GRAY
+        self.default_bg = C64_BLUE
+        self.row_fg_colors = [self.default_fg] * self.content_rows
+        self.row_bg_colors = [self.default_bg] * self.content_rows
         self.glyphs = self._load_font(font_path)
         self.default_glyph = self._render_pattern(self._fallback_pattern("?"))
+        self._glyph_cache = {self.default_fg: self.glyphs}
+        self._default_glyph_cache = {self.default_fg: self.default_glyph}
 
     def _determine_scale(self, forced_scale, display_size=None):
         if forced_scale:
@@ -781,6 +787,8 @@ class C64Renderer:
         self.buffer = [[" "] * C64_COLS for _ in range(self.content_rows)]
         self.cursor_x = 0
         self.cursor_y = 0
+        self.row_fg_colors = [self.default_fg] * self.content_rows
+        self.row_bg_colors = [self.default_bg] * self.content_rows
 
     def _newline(self):
         self.cursor_x = 0
@@ -788,11 +796,58 @@ class C64Renderer:
         if self.cursor_y >= self.content_rows:
             self.buffer.pop(0)
             self.buffer.append([" "] * C64_COLS)
+            self.row_fg_colors.pop(0)
+            self.row_bg_colors.pop(0)
+            self.row_fg_colors.append(self.default_fg)
+            self.row_bg_colors.append(self.default_bg)
             self.cursor_y = self.content_rows - 1
 
     def _glyph_for_char(self, char):
         code = ord(char) if char else ord("?")
         return self.glyphs.get(code, self.default_glyph)
+
+    def _set_row_style(self, row_index, fg_color=None, bg_color=None):
+        if fg_color is not None:
+            self.row_fg_colors[row_index] = fg_color
+        if bg_color is not None:
+            self.row_bg_colors[row_index] = bg_color
+
+    def _tint_surface(self, surface, color):
+        tinted = pygame.Surface(surface.get_size(), pygame.SRCALPHA).convert_alpha()
+        width, height = surface.get_size()
+        for y in range(height):
+            for x in range(width):
+                if surface.get_at((x, y)).a:
+                    tinted.set_at((x, y), (*color, 255))
+        return tinted
+
+    def _tint_glyphs(self, color):
+        tinted = {}
+        for code, glyph in self.glyphs.items():
+            tinted[code] = self._tint_surface(glyph, color)
+        return tinted
+
+    def _get_glyphs_for_color(self, color):
+        if color is None:
+            return self.glyphs
+        key = tuple(color)
+        cached = self._glyph_cache.get(key)
+        if cached:
+            return cached
+        tinted = self._tint_glyphs(key)
+        self._glyph_cache[key] = tinted
+        return tinted
+
+    def _get_default_glyph_for_color(self, color):
+        if color is None:
+            return self.default_glyph
+        key = tuple(color)
+        cached = self._default_glyph_cache.get(key)
+        if cached:
+            return cached
+        tinted = self._tint_surface(self.default_glyph, key)
+        self._default_glyph_cache[key] = tinted
+        return tinted
 
     def process_events(self):
         for event in pygame.event.get():
@@ -800,14 +855,20 @@ class C64Renderer:
                 pygame.quit()
                 sys.exit(0)
 
-    def write(self, text):
+    def write(self, text, fg_color=None, bg_color=None):
         for ch in text:
             if ch == "\n":
                 self._newline()
+                if fg_color is not None or bg_color is not None:
+                    self._set_row_style(self.cursor_y, fg_color, bg_color)
                 continue
             if ch == "\f":
                 self.clear()
+                if fg_color is not None or bg_color is not None:
+                    self._set_row_style(self.cursor_y, fg_color, bg_color)
                 continue
+            if fg_color is not None or bg_color is not None:
+                self._set_row_style(self.cursor_y, fg_color, bg_color)
             sanitized = ch
             if not sanitized.isprintable() or sanitized == "\r":
                 sanitized = " "
@@ -816,6 +877,8 @@ class C64Renderer:
             self.cursor_x += 1
             if self.cursor_x >= C64_COLS:
                 self._newline()
+                if fg_color is not None or bg_color is not None:
+                    self._set_row_style(self.cursor_y, fg_color, bg_color)
 
     def set_status_bar(self, text):
         """Update the persistent status/title bar shown on the top row."""
@@ -842,8 +905,24 @@ class C64Renderer:
         self.logical_surface.fill(C64_BLUE)
         self._draw_status_bar()
         for y, row in enumerate(self.buffer):
+            bg_color = self.row_bg_colors[y]
+            if bg_color != C64_BLUE:
+                pygame.draw.rect(
+                    self.logical_surface,
+                    bg_color,
+                    pygame.Rect(
+                        0,
+                        (y + C64_STATUS_ROWS) * C64_CELL_SIZE_V,
+                        LOGICAL_WIDTH,
+                        C64_CELL_SIZE_V,
+                    ),
+                )
+            glyphs = self._get_glyphs_for_color(self.row_fg_colors[y])
             for x, ch in enumerate(row):
-                glyph = self._glyph_for_char(ch)
+                code = ord(ch) if ch else ord("?")
+                glyph = glyphs.get(code)
+                if glyph is None:
+                    glyph = self._get_default_glyph_for_color(self.row_fg_colors[y])
                 self.logical_surface.blit(
                     glyph, (x * C64_CELL_SIZE_H, (y + C64_STATUS_ROWS) * C64_CELL_SIZE_V)
                 )

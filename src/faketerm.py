@@ -15,6 +15,9 @@ from c64renderer import C64Renderer
 # os.environ["OLLAMA_NO_CUDA"] = "1"
 
 AI_THINKING_STATUS = "<AI IS THINKING>"
+AI_COMMENT_LABEL = "AI SAYS:"
+AI_COMMENT_FG = (255, 255, 255)
+AI_COMMENT_BG = (0, 0, 0)
 LLM_MODEL = 'ministral-3:14b' # 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
 ENABLE_LLM = True
 ENABLE_EMBED = False
@@ -247,6 +250,8 @@ def type_to_renderer(
     max_delay=0.20,
     beep=True,
     word_mode=False,
+    fg_color=None,
+    bg_color=None,
 ):
     """
     Simulate typing to the renderer: emit characters one by one with a delay
@@ -275,7 +280,7 @@ def type_to_renderer(
         _handle_quit_shortcut()
         if renderer:
             renderer.render_frame(show_cursor=True)
-        renderer.write(chunk)
+        renderer.write(chunk, fg_color=fg_color, bg_color=bg_color)
         typed += 1
         renderer.render_frame(show_cursor=typed < total_chunks)
         # Use the last non-newline character of the chunk to keep delays consistent.
@@ -602,10 +607,24 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
             print("<AI thinks : '" + ai_thinking + "'>\n")
             if renderer and llm_commentary:
                 cleaned_comment = sanitize_renderer_text(llm_commentary).strip()
-                display_comment = "\n> " + cleaned_comment + "\n"
+                if cleaned_comment:
+                    display_comment = "\n> " + AI_COMMENT_LABEL + " " + cleaned_comment
+                else:
+                    display_comment = "\n> " + AI_COMMENT_LABEL
                 type_to_renderer(
                     renderer,
                     display_comment,
+                    base_delay=1 / 60.0,
+                    min_delay=1 / 240.0,
+                    max_delay=1 / 30.0,
+                    beep=False,
+                    word_mode=True,
+                    fg_color=AI_COMMENT_FG,
+                    bg_color=AI_COMMENT_BG,
+                )
+                type_to_renderer(
+                    renderer,
+                    "\n",
                     base_delay=1 / 60.0,
                     min_delay=1 / 240.0,
                     max_delay=1 / 30.0,
