@@ -20,6 +20,7 @@ func _ready() -> void:
 	video_player.play()
 	subtitle_panel.visible = false
 	subtitles = _load_subtitles()
+	subtitle_label.add_theme_font_size_override("font_size", 24)
 	_update_subtitle(0.0)
 
 func _process(_delta: float) -> void:
