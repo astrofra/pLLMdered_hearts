@@ -2,12 +2,15 @@ extends Control
 
 @onready var video_player: VideoStreamPlayer = $Margin/VideoFrame/VideoPlayer
 @onready var subtitle_label: Label = $Subtitles/SubtitlePanel/SubtitleLabel
-@onready var subtitle_panel: PanelContainer = $Subtitles/SubtitlePanel
+@onready var subtitle_shadow_label: Label = $Subtitles/SubtitlePanel/SubtitleShadowLabel
+@onready var subtitle_panel: Control = $Subtitles/SubtitlePanel
 
 const VIDEO_PATH = "res://video/abriggs-itw.ogv"
 const SUBTITLE_VTT_PATH = "res://video/abriggs-itw.vtt"
 const SUBTITLE_TXT_PATH = "res://video/abriggs-itw.txt"
 const SUBTITLE_FONT_PATH = "res://fonts/RobotoCondensed-Regular.ttf"
+const SUBTITLE_FONT_SIZE = 24
+const SUBTITLE_SHADOW_OFFSET_RATIO = 0.17
 
 var subtitles: Array = []
 var current_subtitle_index := -1
@@ -21,13 +24,37 @@ func _ready() -> void:
 	video_player.play()
 	subtitle_panel.visible = false
 	subtitles = _load_subtitles()
+	_apply_subtitle_style()
+	_update_subtitle(0.0)
+
+func _apply_subtitle_style() -> void:
 	var font = load(SUBTITLE_FONT_PATH) as FontFile
 	if font != null:
 		subtitle_label.add_theme_font_override("font", font)
+		subtitle_shadow_label.add_theme_font_override("font", font)
 	else:
 		push_error("Subtitle font not found: %s" % SUBTITLE_FONT_PATH)
-	subtitle_label.add_theme_font_size_override("font_size", 24)
-	_update_subtitle(0.0)
+	subtitle_label.add_theme_font_size_override("font_size", SUBTITLE_FONT_SIZE)
+	subtitle_shadow_label.add_theme_font_size_override("font_size", SUBTITLE_FONT_SIZE)
+	subtitle_label.add_theme_color_override("font_color", Color(1, 1, 0, 1))
+	subtitle_shadow_label.add_theme_color_override("font_color", Color(0, 0, 0, 1))
+	_apply_subtitle_layout()
+
+func _apply_subtitle_layout() -> void:
+	for label in [subtitle_shadow_label, subtitle_label]:
+		label.anchor_left = 0.0
+		label.anchor_top = 0.0
+		label.anchor_right = 1.0
+		label.anchor_bottom = 1.0
+		label.offset_left = 0.0
+		label.offset_top = 0.0
+		label.offset_right = 0.0
+		label.offset_bottom = 0.0
+	var shadow_offset = max(1, int(round(float(SUBTITLE_FONT_SIZE) * SUBTITLE_SHADOW_OFFSET_RATIO)))
+	subtitle_shadow_label.offset_left = shadow_offset
+	subtitle_shadow_label.offset_top = shadow_offset
+	subtitle_shadow_label.offset_right = shadow_offset
+	subtitle_shadow_label.offset_bottom = shadow_offset
 
 func _process(_delta: float) -> void:
 	if subtitles.is_empty():
@@ -156,12 +183,15 @@ func _update_subtitle(time_sec: float) -> void:
 	if idx == -1:
 		if subtitle_label.text != "":
 			subtitle_label.text = ""
+			subtitle_shadow_label.text = ""
 		if subtitle_panel.visible:
 			subtitle_panel.visible = false
 		current_subtitle_index = -1
 		return
 	if idx != current_subtitle_index:
 		current_subtitle_index = idx
-		subtitle_label.text = subtitles[idx]["text"]
+		var cue_text = subtitles[idx]["text"]
+		subtitle_label.text = cue_text
+		subtitle_shadow_label.text = cue_text
 		if not subtitle_panel.visible:
 			subtitle_panel.visible = true
