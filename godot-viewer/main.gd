@@ -7,6 +7,7 @@ extends Control
 const VIDEO_PATH = "res://video/abriggs-itw.ogv"
 const SUBTITLE_VTT_PATH = "res://video/abriggs-itw.vtt"
 const SUBTITLE_TXT_PATH = "res://video/abriggs-itw.txt"
+const SUBTITLE_FONT_PATH = "res://fonts/RobotoCondensed-Regular.ttf"
 
 var subtitles: Array = []
 var current_subtitle_index := -1
@@ -20,6 +21,11 @@ func _ready() -> void:
 	video_player.play()
 	subtitle_panel.visible = false
 	subtitles = _load_subtitles()
+	var font = load(SUBTITLE_FONT_PATH) as FontFile
+	if font != null:
+		subtitle_label.add_theme_font_override("font", font)
+	else:
+		push_error("Subtitle font not found: %s" % SUBTITLE_FONT_PATH)
 	subtitle_label.add_theme_font_size_override("font_size", 24)
 	_update_subtitle(0.0)
 
