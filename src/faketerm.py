@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import time
+import unicodedata
 
 import ollama
 import pexpect
@@ -14,6 +15,9 @@ from c64renderer import C64Renderer
 # os.environ["OLLAMA_NO_CUDA"] = "1"
 
 AI_THINKING_STATUS = "<AI IS THINKING>"
+AI_COMMENT_LABEL = "AI SAYS:"
+AI_COMMENT_FG = (255, 255, 255)
+AI_COMMENT_BG = (0, 0, 0)
 LLM_MODEL = 'ministral-3:14b' # 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
 ENABLE_LLM = True
 ENABLE_EMBED = False
@@ -66,6 +70,15 @@ def extract_and_parse_json(text):
     else:
         print("No JSON block found.")
         return None
+
+def sanitize_renderer_text(text):
+    if text is None:
+        return ""
+    placeholder = "__RSQ__"
+    text = text.replace("’", placeholder)
+    normalized = unicodedata.normalize("NFKD", text)
+    ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
+    return ascii_text.replace(placeholder, "’")
 
 # Match ANSI escape sequences like ESC[31m or ESC[2J
 ansi_escape = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
@@ -237,6 +250,8 @@ def type_to_renderer(
     max_delay=0.20,
     beep=True,
     word_mode=False,
+    fg_color=None,
+    bg_color=None,
 ):
     """
     Simulate typing to the renderer: emit characters one by one with a delay
@@ -265,7 +280,7 @@ def type_to_renderer(
         _handle_quit_shortcut()
         if renderer:
             renderer.render_frame(show_cursor=True)
-        renderer.write(chunk)
+        renderer.write(chunk, fg_color=fg_color, bg_color=bg_color)
         typed += 1
         renderer.render_frame(show_cursor=typed < total_chunks)
         # Use the last non-newline character of the chunk to keep delays consistent.
@@ -384,6 +399,7 @@ def build_prompt(prev_output, next_cmd):
     prompt = prompt + "From the known solution of the game, you know the next good command will be : " + (next_cmd or "")
     prompt = prompt + "Please give a strong feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, explaining why you would do this in this context."
     prompt = prompt + "When thinking out loud, you refer yourself (and yourself only) as 'meuf'."
+    prompt = prompt + "Slang is okay, but avoid being to rude."
     prompt = prompt + "One short paragraph maximum."
     return prompt
 
@@ -589,6 +605,32 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                 renderer.render_frame()
             ai_thinking = llm_commentary + "\n"
             print("<AI thinks : '" + ai_thinking + "'>\n")
+            if renderer and llm_commentary:
+                cleaned_comment = sanitize_renderer_text(llm_commentary).strip()
+                if cleaned_comment:
+                    display_comment = "\n> " + AI_COMMENT_LABEL + " " + cleaned_comment
+                else:
+                    display_comment = "\n> " + AI_COMMENT_LABEL
+                type_to_renderer(
+                    renderer,
+                    display_comment,
+                    base_delay=1 / 60.0,
+                    min_delay=1 / 240.0,
+                    max_delay=1 / 30.0,
+                    beep=False,
+                    word_mode=True,
+                    fg_color=AI_COMMENT_FG,
+                    bg_color=AI_COMMENT_BG,
+                )
+                type_to_renderer(
+                    renderer,
+                    "\n",
+                    base_delay=1 / 60.0,
+                    min_delay=1 / 240.0,
+                    max_delay=1 / 30.0,
+                    beep=False,
+                    word_mode=True,
+                )
             llm_path = write_llm_markdown(llm_commentary)
             write_llm_timecode_metadata(llm_path, get_timecode_entry(timecode_cache, cmd_index))
         elif ENABLE_EMBED:
