@@ -10,9 +10,10 @@ const VIDEO_PATH = "res://video/abriggs-itw.ogv"
 const SUBTITLE_VTT_PATH = "res://video/abriggs-itw.vtt"
 const SUBTITLE_TXT_PATH = "res://video/abriggs-itw.txt"
 const SUBTITLE_FONT_PATH = "res://fonts/RobotoCondensed-Regular.ttf"
-const SUBTITLE_FONT_SIZE = 28
+const SUBTITLE_FONT_SIZE = 36
 const SUBTITLE_SHADOW_OFFSET_RATIO = 0.17
 const DEFAULT_VIDEO_ASPECT_RATIO = 16.0 / 9.0
+const VIDEO_OFFSET_RATIO = Vector2(0.45, 0.0)
 const WINDOW_SIZE = Vector2i(480, 1080)
 const WINDOW_POSITION = Vector2i(1440, 0)
 
@@ -64,8 +65,14 @@ func _update_video_cover() -> void:
 	else:
 		target_size.x = frame_size.x
 		target_size.y = frame_size.x / aspect
+	var offset_ratio = Vector2(
+		clamp(VIDEO_OFFSET_RATIO.x, -1.0, 1.0),
+		clamp(VIDEO_OFFSET_RATIO.y, -1.0, 1.0)
+	)
+	var extra = target_size - frame_size
+	var offset = Vector2(extra.x * 0.5 * offset_ratio.x, extra.y * 0.5 * offset_ratio.y)
 	video_player.size = target_size
-	video_player.position = (frame_size - target_size) * 0.5
+	video_player.position = (frame_size - target_size) * 0.5 + offset
 
 func _get_video_aspect_ratio() -> float:
 	if video_player.has_method("get_video_texture"):
