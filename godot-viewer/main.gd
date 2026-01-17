@@ -2,6 +2,7 @@ extends Control
 
 @onready var video_player: VideoStreamPlayer = $Margin/VideoFrame/VideoPlayer
 @onready var video_frame: Control = $Margin/VideoFrame
+@onready var margin_container: MarginContainer = $Margin
 @onready var subtitle_label: Label = $Subtitles/SubtitlePanel/SubtitleLabel
 @onready var subtitle_shadow_label: Label = $Subtitles/SubtitlePanel/SubtitleShadowLabel
 @onready var subtitle_panel: Control = $Subtitles/SubtitlePanel
@@ -14,6 +15,7 @@ const SUBTITLE_FONT_SIZE = 36
 const SUBTITLE_SHADOW_OFFSET_RATIO = 0.17
 const DEFAULT_VIDEO_ASPECT_RATIO = 16.0 / 9.0
 const VIDEO_OFFSET_RATIO = Vector2(0.45, 0.0)
+const VIDEO_MARGIN_RATIO = Vector2(0.025, 0.01)
 const WINDOW_SIZE = Vector2i(480, 1080)
 const WINDOW_POSITION = Vector2i(1440, 0)
 
@@ -39,6 +41,18 @@ func _apply_window_settings() -> void:
 	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, true)
 	DisplayServer.window_set_size(WINDOW_SIZE)
 	DisplayServer.window_set_position(WINDOW_POSITION)
+	_apply_video_margins()
+
+func _apply_video_margins() -> void:
+	var window_size = DisplayServer.window_get_size()
+	if window_size.x <= 0 or window_size.y <= 0:
+		window_size = WINDOW_SIZE
+	var margin_x = int(round(float(window_size.x) * VIDEO_MARGIN_RATIO.x))
+	var margin_y = int(round(float(window_size.y) * VIDEO_MARGIN_RATIO.y))
+	margin_container.offset_left = margin_x
+	margin_container.offset_top = margin_y
+	margin_container.offset_right = -margin_x
+	margin_container.offset_bottom = -margin_y
 
 func _apply_video_layout() -> void:
 	video_player.expand = true
