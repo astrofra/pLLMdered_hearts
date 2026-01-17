@@ -3,14 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Commentary Viewer</title>
+  <title>Amy Briggs Interview</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body class="needs-start">
   <div id="start-screen" class="start-screen" role="dialog" aria-modal="true">
     <div class="start-card">
-      <h1>LLM Commentary Viewer</h1>
+      <h1>Amy Briggs Interview</h1>
       <p>Press start to begin playback.</p>
       <button id="start-button" class="start-button" type="button">START</button>
     </div>
@@ -22,12 +21,6 @@
         <track src="static/video/abriggs-itw.vtt" kind="captions" srclang="en" label="English" default />
         Your browser does not support the video tag.
       </video>
-    </div>
-    <div class="viewer-panel">
-      <div id="content" class="fade"></div>
-      <div class="hero">
-        <img src="static/img/ollama.png" alt="Heroine portrait" />
-      </div>
     </div>
   </div>
   <script src="main.js"></script>

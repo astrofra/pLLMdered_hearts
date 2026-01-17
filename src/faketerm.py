@@ -30,10 +30,8 @@ C64_FIT_TO_DISPLAY = True
 
 C64_FONT_PATH = None  # Using built-in fallback font; no external sprite sheet required.
 KEY_AUDIO_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "audio")
-LLM_OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "llm_out")
 EMBED_MODEL = "qwen3-embedding"
 EMBED_OUT_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "game-embeddings.json")
-LLM_TIMECODE_CACHE_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "game-embeddings.closest-timecodes.json")
 
 if ENABLE_LLM and ENABLE_EMBED:
     raise ValueError("ENABLE_LLM and ENABLE_EMBED are mutually exclusive.")
@@ -300,64 +298,6 @@ def type_to_renderer(
         prev = ch
 
 
-def write_llm_markdown(text):
-    """Persist LLM commentary as a timestamped markdown file in llm_out/."""
-    if text is None:
-        return None
-    try:
-        os.makedirs(LLM_OUT_DIR, exist_ok=True)
-        timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-        filename = f"{timestamp}.md"
-        path = os.path.join(LLM_OUT_DIR, filename)
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(text)
-        return path
-    except Exception as exc:
-        print(f"Failed to write LLM output: {exc}")
-        return None
-
-
-def load_timecode_cache(path):
-    if not os.path.exists(path):
-        return []
-    try:
-        with open(path, "r", encoding="utf-8") as handle:
-            data = json.load(handle)
-        if isinstance(data, list):
-            return data
-    except Exception as exc:
-        print(f"Failed to load timecode cache: {exc}")
-    return []
-
-
-def get_timecode_entry(cache, index):
-    if not cache:
-        return None
-    if index < len(cache):
-        entry = cache[index]
-        if isinstance(entry, dict):
-            return entry
-    for entry in cache:
-        if isinstance(entry, dict) and entry.get("source_index") == index:
-            return entry
-    return None
-
-
-def write_llm_timecode_metadata(markdown_path, cache_entry):
-    if not markdown_path or not cache_entry:
-        return
-    payload = {
-        "timecode": cache_entry.get("timecode"),
-        "destination_index": cache_entry.get("destination_index"),
-    }
-    json_path = os.path.splitext(markdown_path)[0] + ".json"
-    try:
-        with open(json_path, "w", encoding="utf-8") as handle:
-            json.dump(payload, handle, ensure_ascii=True, indent=2)
-    except Exception as exc:
-        print(f"Failed to write LLM timecode metadata: {exc}")
-
-
 def embed_text(text):
     if text is None:
         return None
@@ -511,7 +451,6 @@ cmd_index = 0
 prev_cmd = None
 pending_intro_ack = True
 last_cleaned = ""
-timecode_cache = load_timecode_cache(LLM_TIMECODE_CACHE_PATH)
 
 # Unified loop for reading, displaying, and responding.
 while True:  # for step, cmd in enumerate(plundered_hearts_commands):
@@ -631,8 +570,6 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                     beep=False,
                     word_mode=True,
                 )
-            llm_path = write_llm_markdown(llm_commentary)
-            write_llm_timecode_metadata(llm_path, get_timecode_entry(timecode_cache, cmd_index))
         elif ENABLE_EMBED:
             embeddings = load_embeddings(EMBED_OUT_PATH)
             while len(embeddings) <= cmd_index:
