@@ -384,6 +384,7 @@ def build_prompt(prev_output, next_cmd):
     prompt = prompt + "From the known solution of the game, you know the next good command will be : " + (next_cmd or "")
     prompt = prompt + "Please give a strong feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, explaining why you would do this in this context."
     prompt = prompt + "When thinking out loud, you refer yourself (and yourself only) as 'meuf'."
+    prompt = prompt + "Slang is okay, but avoid being to rude."
     prompt = prompt + "One short paragraph maximum."
     return prompt
 
