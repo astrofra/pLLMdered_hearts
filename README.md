@@ -26,6 +26,15 @@ _Deux récits se déroulent en parallèle, celui de Lady Dimsford (l'héroïne d
 
 > Je connaissais les jeux d'Infocom, bien entendu, tout au moins les plus célèbres, comme Zork ou Le Guide du Routard Intergalactique. Mais c'est vraiment en tombant sur cette série d'interviews réalisée par Jason Scott pour son documentaire "Get Lamp" que j'ai découvert Amy Briggs et son jeu "Plundered Hearts". Cette interview vidéo, livrée telle quelle sous la forme d'un derushage assez brut, m'a complétement fasciné. Il m'a cependant fallu plusieurs années avant de réellement prendre la mesure de la richesse de ce matériau historique. L'IA, qui s'est peu à peu infiltré dans nos outils, m'a aidé à en extraire des sous titres, à les mettre en forme, pour que je la mesure du témoignage historique que donne Amy Briggs, sur son époque, son travail chez Infocom et la singularité que représente l'objet culture "Plundered Hearts".
 
+### Glossary
+
+- Imps
+- Text adventure
+- Compiling
+- ZIL
+- Zork
+- Infocom
+
 ---
 
 ## Objectif
