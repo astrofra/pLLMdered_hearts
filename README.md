@@ -24,6 +24,8 @@ _Deux récits se déroulent en parallèle, celui de Lady Dimsford (l'héroïne d
 - Affichage en split-screen : en haut le jeu, en bas les pensées de l’IA.
 - Optionnel : voix de synthèse, interaction avec les visiteurs, mode "veille réflexive".
 
+> Je connaissais les jeux d'Infocom, bien entendu, tout au moins les plus connus, comme Zork ou Le Guide du Routard Intergalactique. Mais c'est vraiment en tombant sur cette série d'interviews réalisé par Jason Scott (Archive.org et Textfiles.com) que j'ai découvert Amy Briggs et son jeu "Plundered Hearts". Son interview, livrée telle quelle sous la forme d'un derushage assez brut par Jason Scott dans le cadre du tournage de son film "Get Lamp", m'a complétement fasciné. Il m'a fallu plusieurs années avant de réellement prendre la mesure du matériau historique que représentait cette interview. L'IA, qui s'est peu à peu infiltré dans nos outils, m'a aidé à en extraire des sous titres, à les mettre en forme, pour finalement saisir la richesse du témoignage historique d'Amy Briggs.
+
 ---
 
 ## Objectif
