@@ -12,6 +12,8 @@
 
 L’expérience est augmentée par des extraits d’interview d’Amy Briggs (réalisée par Jason Scott pour Archive.org), des solutions du jeu, et des réflexions de l’IA sur l’époque, la fiction interactive et le genre romantique.
 
+_Deux récits se déroulent en parallèle, celui de Lady Dimsford (l'héroïne du jeu) et celui d'Amy Briggs au sein de la société Infocom._
+
 ---
 
 ## Démarche
