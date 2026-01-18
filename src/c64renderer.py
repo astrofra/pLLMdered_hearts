@@ -98,8 +98,8 @@ class C64Renderer:
             self._set_window_position_env(self.window_position)
         self.window = self._create_window(window_flags)
         if self.always_on_top:
-            self._set_always_on_top()
-            self._next_topmost_check_ms = pygame.time.get_ticks() + ALWAYS_ON_TOP_REFRESH_MS
+            self._topmost_applied = False
+            self._prime_always_on_top()
         else:
             self._next_topmost_check_ms = None
         self.clock = pygame.time.Clock()
@@ -216,19 +216,33 @@ class C64Renderer:
 
     def _set_always_on_top(self):
         if not sys.platform.startswith("win"):
-            return
+            return False
         try:
             import ctypes
+            from ctypes import wintypes
 
             wm_info = pygame.display.get_wm_info()
             hwnd = wm_info.get("window")
             if not hwnd:
-                return
-            HWND_TOPMOST = -1
+                return False
+            user32 = ctypes.windll.user32
+            if not getattr(user32, "_setwindowpos_configured", False):
+                user32.SetWindowPos.argtypes = [
+                    wintypes.HWND,
+                    wintypes.HWND,
+                    wintypes.INT,
+                    wintypes.INT,
+                    wintypes.INT,
+                    wintypes.INT,
+                    wintypes.UINT,
+                ]
+                user32.SetWindowPos.restype = wintypes.BOOL
+                user32._setwindowpos_configured = True
+            HWND_TOPMOST = wintypes.HWND(-1)
             SWP_NOMOVE = 0x0002
             SWP_NOSIZE = 0x0001
             SWP_SHOWWINDOW = 0x0040
-            ctypes.windll.user32.SetWindowPos(
+            user32.SetWindowPos(
                 hwnd,
                 HWND_TOPMOST,
                 0,
@@ -237,13 +251,30 @@ class C64Renderer:
                 0,
                 SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW,
             )
+            return True
+        except Exception:
+            return False
+
+    def _prime_always_on_top(self):
+        try:
+            pygame.event.pump()
         except Exception:
             pass
+        if self._set_always_on_top():
+            self._topmost_applied = True
+            self._next_topmost_check_ms = pygame.time.get_ticks() + ALWAYS_ON_TOP_REFRESH_MS
+        else:
+            self._next_topmost_check_ms = pygame.time.get_ticks()
 
     def _refresh_always_on_top(self):
         if not self.always_on_top or self._next_topmost_check_ms is None:
             return
         now_ms = pygame.time.get_ticks()
+        if not self._topmost_applied:
+            if self._set_always_on_top():
+                self._topmost_applied = True
+            self._next_topmost_check_ms = now_ms + ALWAYS_ON_TOP_REFRESH_MS
+            return
         if now_ms < self._next_topmost_check_ms:
             return
         self._set_always_on_top()
@@ -1012,4 +1043,6 @@ class C64Renderer:
             )
             pygame.draw.rect(self.window, C64_BORDER_COLOR, border_rect, BORDER_THICKNESS)
         pygame.display.flip()
+        if self.always_on_top and not self._topmost_applied:
+            self._prime_always_on_top()
         self.clock.tick(self.fps)
