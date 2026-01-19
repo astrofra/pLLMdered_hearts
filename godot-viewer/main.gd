@@ -8,13 +8,13 @@ extends Control
 @onready var subtitle_panel: Control = $Subtitles/SubtitlePanel
 
 const VIDEO_PATH = "res://video/abriggs-itw.ogv"
-const SUBTITLE_VTT_PATH = "res://video/abriggs-itw.vtt"
-const SUBTITLE_TXT_PATH = "res://video/abriggs-itw.txt"
+const SUBTITLE_PATH = "res://video/abriggs-itw.svb"
+const SUBTITLE_VTT_FALLBACK_PATH = "res://video/abriggs-itw.vtt"
 const SUBTITLE_FONT_PATH = "res://fonts/RobotoCondensed-Regular.ttf"
 const SUBTITLE_FONT_SIZE = 36
 const SUBTITLE_SHADOW_OFFSET_RATIO = 0.17
-const DEFAULT_VIDEO_ASPECT_RATIO = 16.0 / 9.0
-const VIDEO_OFFSET_RATIO = Vector2(0.45, 0.0)
+const DEFAULT_VIDEO_ASPECT_RATIO = 720.0 / 720.0
+const VIDEO_OFFSET_RATIO = Vector2(0.0, 0.0)
 const VIDEO_MARGIN_RATIO = Vector2(0.025, 0.01)
 const SUBTITLE_PANEL_HEIGHT_RATIO = 0.2
 const SUBTITLE_PANEL_BOTTOM_MARGIN_RATIO = 0.04
@@ -150,11 +150,20 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_tree().quit()
 
 func _load_subtitles() -> Array:
-	if FileAccess.file_exists(SUBTITLE_VTT_PATH):
-		return _parse_vtt(SUBTITLE_VTT_PATH)
-	if FileAccess.file_exists(SUBTITLE_TXT_PATH):
-		return _parse_txt(SUBTITLE_TXT_PATH)
-	push_error("Subtitle file not found.")
+	var path = ""
+	if FileAccess.file_exists(SUBTITLE_PATH):
+		path = SUBTITLE_PATH
+	elif FileAccess.file_exists(SUBTITLE_VTT_FALLBACK_PATH):
+		path = SUBTITLE_VTT_FALLBACK_PATH
+	if path == "":
+		push_error("Subtitle file not found.")
+		return []
+	var extension = path.get_extension().to_lower()
+	if extension == "vtt":
+		return _parse_vtt(path)
+	if extension == "sbv" or extension == "svb" or extension == "txt":
+		return _parse_sbv(path)
+	push_error("Unsupported subtitle format: %s" % path)
 	return []
 
 func _parse_vtt(path: String) -> Array:
@@ -189,7 +198,7 @@ func _parse_vtt(path: String) -> Array:
 		idx += 1
 	return cues
 
-func _parse_txt(path: String) -> Array:
+func _parse_sbv(path: String) -> Array:
 	var cues: Array = []
 	var file = FileAccess.open(path, FileAccess.READ)
 	if file == null:
@@ -214,7 +223,8 @@ func _parse_txt(path: String) -> Array:
 		idx += 1
 		var text_lines: Array = []
 		while idx < lines.size() and lines[idx].strip_edges() != "":
-			text_lines.append(lines[idx].strip_edges())
+			var cleaned = lines[idx].strip_edges().replace("\u00a0", " ")
+			text_lines.append(cleaned)
 			idx += 1
 		var cue_text = " ".join(text_lines).strip_edges()
 		if start >= 0.0 and end >= 0.0 and cue_text != "":
