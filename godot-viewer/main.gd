@@ -7,9 +7,8 @@ extends Control
 @onready var subtitle_shadow_label: Label = $Subtitles/SubtitlePanel/SubtitleShadowLabel
 @onready var subtitle_panel: Control = $Subtitles/SubtitlePanel
 
-const VIDEO_PATH = "res://video/abriggs-itw.ogv"
-const SUBTITLE_PATH = "res://video/abriggs-itw.svb"
-const SUBTITLE_VTT_FALLBACK_PATH = "res://video/abriggs-itw.vtt"
+const VIDEO_FOLDER_PATH = "res://video"
+const SUBTITLE_EXTENSIONS = ["svb", "sbv", "vtt"]
 const SUBTITLE_FONT_PATH = "res://fonts/RobotoCondensed-Regular.ttf"
 const SUBTITLE_FONT_SIZE = 36
 const SUBTITLE_SHADOW_OFFSET_RATIO = 0.17
@@ -23,21 +22,24 @@ const WINDOW_POSITION = Vector2i(1440, 0)
 
 var subtitles: Array = []
 var current_subtitle_index := -1
+var video_queue: Array[String] = []
+var noise_videos: Array[String] = []
+var pending_next_video := ""
+var current_video_path := ""
+var current_is_noise := false
+var rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	_apply_window_settings()
-	var stream = load(VIDEO_PATH)
-	if stream == null:
-		push_error("Video not found or unsupported: %s" % VIDEO_PATH)
-		return
-	video_player.stream = stream
 	_apply_video_layout()
-	video_player.play()
+	if not video_player.finished.is_connected(_on_video_finished):
+		video_player.finished.connect(_on_video_finished)
+	rng.randomize()
+	_scan_video_folder()
 	call_deferred("_update_video_cover")
 	subtitle_panel.visible = false
-	subtitles = _load_subtitles()
 	_apply_subtitle_style()
-	_update_subtitle(0.0)
+	_play_next_from_queue()
 
 func _apply_window_settings() -> void:
 	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, true)
@@ -148,22 +150,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE:
 			get_tree().quit()
+		elif event.keycode == KEY_SPACE:
+			_skip_to_next()
 
-func _load_subtitles() -> Array:
-	var path = ""
-	if FileAccess.file_exists(SUBTITLE_PATH):
-		path = SUBTITLE_PATH
-	elif FileAccess.file_exists(SUBTITLE_VTT_FALLBACK_PATH):
-		path = SUBTITLE_VTT_FALLBACK_PATH
-	if path == "":
-		push_error("Subtitle file not found.")
-		return []
-	var extension = path.get_extension().to_lower()
-	if extension == "vtt":
-		return _parse_vtt(path)
-	if extension == "sbv" or extension == "svb" or extension == "txt":
-		return _parse_sbv(path)
-	push_error("Unsupported subtitle format: %s" % path)
+func _load_subtitles_for_video(video_path: String) -> Array:
+	var base = video_path.get_basename()
+	for extension in SUBTITLE_EXTENSIONS:
+		var candidate = base + "." + extension
+		if FileAccess.file_exists(candidate):
+			if extension == "vtt":
+				return _parse_vtt(candidate)
+			return _parse_sbv(candidate)
 	return []
 
 func _parse_vtt(path: String) -> Array:
@@ -292,3 +289,128 @@ func _update_subtitle(time_sec: float) -> void:
 		subtitle_shadow_label.text = cue_text
 		if not subtitle_panel.visible:
 			subtitle_panel.visible = true
+
+func _scan_video_folder() -> void:
+	video_queue.clear()
+	noise_videos.clear()
+	var dir = DirAccess.open(VIDEO_FOLDER_PATH)
+	if dir == null:
+		push_error("Video folder not found: %s" % VIDEO_FOLDER_PATH)
+		return
+	dir.list_dir_begin()
+	var file = dir.get_next()
+	while file != "":
+		if not dir.current_is_dir():
+			var lower = file.to_lower()
+			if lower.ends_with(".ogv"):
+				var path = VIDEO_FOLDER_PATH + "/" + file
+				if _is_noise_video(lower):
+					noise_videos.append(path)
+				elif _is_numbered_video(file):
+					video_queue.append(path)
+		file = dir.get_next()
+	dir.list_dir_end()
+	video_queue.sort()
+
+func _is_noise_video(filename_lower: String) -> bool:
+	return filename_lower.begins_with("noise_")
+
+func _is_numbered_video(filename: String) -> bool:
+	if filename.length() == 0:
+		return false
+	var first = filename[0]
+	return first >= "0" and first <= "9"
+
+func _play_video(path: String, is_noise: bool) -> void:
+	var stream = load(path)
+	if stream == null:
+		push_error("Video not found or unsupported: %s" % path)
+		return
+	current_video_path = path
+	current_is_noise = is_noise
+	video_player.stream = stream
+	video_player.play()
+	current_subtitle_index = -1
+	if is_noise:
+		_clear_subtitles()
+	else:
+		subtitles = _load_subtitles_for_video(path)
+		_update_subtitle(0.0)
+
+func _play_next_from_queue() -> void:
+	if video_queue.is_empty():
+		return
+	var next_path = video_queue.pop_front()
+	if current_video_path == "":
+		_play_video(next_path, false)
+	else:
+		_transition_to_video(next_path)
+
+func _transition_to_video(next_path: String) -> void:
+	pending_next_video = next_path
+	_play_random_noise()
+
+func _play_random_noise() -> void:
+	if noise_videos.is_empty():
+		if pending_next_video != "":
+			var next_path = pending_next_video
+			pending_next_video = ""
+			_play_video(next_path, false)
+		return
+	var index = rng.randi_range(0, noise_videos.size() - 1)
+	_play_video(noise_videos[index], true)
+
+func _on_video_finished() -> void:
+	if current_is_noise:
+		if pending_next_video != "":
+			var next_path = pending_next_video
+			pending_next_video = ""
+			_play_video(next_path, false)
+		return
+	if video_queue.is_empty():
+		return
+	pending_next_video = video_queue.pop_front()
+	_play_random_noise()
+
+func _skip_to_next() -> void:
+	if video_queue.is_empty():
+		return
+	var next_path = video_queue.pop_front()
+	if current_video_path == "":
+		_play_video(next_path, false)
+		return
+	if current_is_noise:
+		pending_next_video = ""
+		_play_video(next_path, false)
+		return
+	pending_next_video = next_path
+	_play_random_noise()
+
+func _clear_subtitles() -> void:
+	subtitles = []
+	current_subtitle_index = -1
+	subtitle_label.text = ""
+	subtitle_shadow_label.text = ""
+	subtitle_panel.visible = false
+
+func flush_queue() -> void:
+	video_queue.clear()
+	pending_next_video = ""
+
+func enqueue_video(filename: String) -> void:
+	var path = _resolve_video_path(filename)
+	if path == "":
+		push_warning("Video not found: %s" % filename)
+		return
+	video_queue.append(path)
+
+func is_main_video_playing() -> bool:
+	return video_player.is_playing() and not current_is_noise
+
+func _resolve_video_path(filename: String) -> String:
+	var path = filename
+	if not filename.begins_with("res://"):
+		path = VIDEO_FOLDER_PATH + "/" + filename
+	if FileAccess.file_exists(path):
+		return path
+	return ""

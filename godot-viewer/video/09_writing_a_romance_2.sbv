@@ -1,0 +1,103 @@
+0:00:00.400,0:00:06.240
+Um earlier I wanted to say when when asking 
+about um Steve giving advice, he may not have
+
+0:00:06.240,0:00:13.680
+needed to give advice because I had read him in 
+a at the time I was working there. I read his
+
+0:00:13.680,0:00:18.160
+an interview with him. I think it was may have 
+been for Games Magazine that that struck me at
+
+0:00:18.160,0:00:23.360
+the time and and I still obviously remember it 
+today which is he said um there's this fine line
+
+0:00:23.360,0:00:29.680
+with with reality and with setting up how um the 
+games how the the rooms are described. He said,
+
+0:00:29.680,0:00:35.600
+"If you if you say um you walk into an office, 
+there's a desk there. The player is going to
+
+0:00:35.600,0:00:40.160
+expect the whole world of things that are on 
+a typical desk, a stapler, a phone, you know,
+
+0:00:40.160,0:00:43.680
+a pencil cup. Who knows what they're going 
+to expect?" And you don't want to waste your
+
+0:00:43.680,0:00:50.080
+time as a as an implementer coding in every single 
+possible thing that could possibly be on a desktop
+
+0:00:50.080,0:00:54.880
+when what you really only care about is, you 
+know, the the magic pen that's in the pencil cup.
+
+0:00:54.880,0:01:02.720
+Um whereas if you say you walk into a wizard's 
+uh lab or a wizard's cave, who knows what's in
+
+0:01:02.720,0:01:08.800
+a wizard's cave. So you can get away with a lot 
+by setting it in this fantasy at uh environment
+
+0:01:08.800,0:01:15.680
+that people don't have predetermined expectations 
+about what should be in that environment. Um and
+
+0:01:15.680,0:01:21.200
+and so I I think that's some of what you're 
+talking about of of um at the level of the
+
+0:01:21.200,0:01:28.320
+ters's job was not just to find bugs. the rather 
+dull QA of where does the computer crash. It's
+
+0:01:28.320,0:01:35.040
+where does the world that you've invented break 
+down and what is a reasonable um approximation
+
+0:01:35.040,0:01:42.960
+of things that are on the desk. Let's say that 
+people will look for um without having to burden
+
+0:01:42.960,0:01:47.600
+the code with everything possible. And um you 
+could argue that in Plundered Hearts I didn't I
+
+0:01:47.600,0:01:51.440
+didn't broaden it enough. I didn't get enough of 
+those because people were complaining you can't
+
+0:01:51.440,0:01:56.480
+karate chop or or things. Um, certainly I know 
+I'm still embarrassed to this day in the final
+
+0:01:56.480,0:02:01.520
+released version there's a bug that happens in 
+the first couple moves u when you do something
+
+0:02:01.520,0:02:05.120
+very logical and I can't remember what it is 
+right now but it then that's a it's a true bug.
+
+0:02:05.120,0:02:10.640
+You get garbage if you type out something like 
+take the box there's a box uh under the bed that
+
+0:02:10.640,0:02:15.280
+slides out and if you take the box rather than 
+grab the box or something that's a logical thing
+
+0:02:15.280,0:02:21.520
+to do you get garbage from it. So that was a case 
+where the testers um had missed or I missed in in
+
+0:02:21.520,0:02:26.640
+my own I should take responsibility um a very 
+obvious thing to have done at the beginning.
