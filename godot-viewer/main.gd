@@ -8,7 +8,7 @@ extends Control
 @onready var subtitle_panel: Control = $Subtitles/SubtitlePanel
 
 const VIDEO_FOLDER_PATH = "res://video"
-const SUBTITLE_EXTENSIONS = ["svb", "sbv", "vtt"]
+const SUBTITLE_EXTENSIONS = ["txt"]
 const SUBTITLE_FONT_PATH = "res://fonts/RobotoCondensed-Regular.ttf"
 const SUBTITLE_FONT_SIZE = 36
 const SUBTITLE_SHADOW_OFFSET_RATIO = 0.17
