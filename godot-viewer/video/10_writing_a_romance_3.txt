@@ -15,12 +15,12 @@ next three just cutting stuff out. It was way 
 way too big to fit because I was the last game
 
 0:00:23.040,0:00:29.280
-to fit on I think it was a Commodore 64. So, um, 
+to fit on I think it was a Commodore 64. So, 
 it was all that great stuff that had to be cut.
 
 0:00:29.280,0:00:36.640
 And so I did a lot of cutting, but I started 
-with a blackbox um parser. And I don't think
+with a blackbox parser. And I don't think
 
 0:00:36.640,0:00:42.800
 I started with any other game. I mean, I could 

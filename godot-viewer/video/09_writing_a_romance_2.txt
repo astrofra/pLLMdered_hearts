@@ -1,6 +1,6 @@
 0:00:00.400,0:00:06.240
 Um earlier I wanted to say when when asking 
-about um Steve giving advice, he may not have
+about Steve giving advice, he may not have
 
 0:00:06.240,0:00:13.680
 needed to give advice because I had read him in 
@@ -12,14 +12,14 @@ been for Games Magazine that that struck me at
 
 0:00:18.160,0:00:23.360
 the time and and I still obviously remember it 
-today which is he said um there's this fine line
+today which is he said there's this fine line
 
 0:00:23.360,0:00:29.680
-with with reality and with setting up how um the 
+with with reality and with setting up how the 
 games how the the rooms are described. He said,
 
 0:00:29.680,0:00:35.600
-"If you if you say um you walk into an office, 
+"If you if you say you walk into an office, 
 there's a desk there. The player is going to
 
 0:00:35.600,0:00:40.160
@@ -51,8 +51,8 @@ that people don't have predetermined expectations 
 about what should be in that environment. Um and
 
 0:01:15.680,0:01:21.200
-and so I I think that's some of what you're 
-talking about of of um at the level of the
+and so I think that's some of what you're 
+talking about of of at the level of the
 
 0:01:21.200,0:01:28.320
 ters's job was not just to find bugs. the rather 
@@ -60,14 +60,14 @@ dull QA of where does the computer crash. It's
 
 0:01:28.320,0:01:35.040
 where does the world that you've invented break 
-down and what is a reasonable um approximation
+down and what is a reasonable approximation
 
 0:01:35.040,0:01:42.960
 of things that are on the desk. Let's say that 
-people will look for um without having to burden
+people will look for without having to burden
 
 0:01:42.960,0:01:47.600
-the code with everything possible. And um you 
+the code with everything possible. And you 
 could argue that in Plundered Hearts I didn't I
 
 0:01:47.600,0:01:51.440
@@ -96,8 +96,8 @@ grab the box or something that's a logical thing
 
 0:02:15.280,0:02:21.520
 to do you get garbage from it. So that was a case 
-where the testers um had missed or I missed in in
+where the testers had missed or I missed in in
 
 0:02:21.520,0:02:26.640
-my own I should take responsibility um a very 
+my own I should take responsibility a very 
 obvious thing to have done at the beginning.

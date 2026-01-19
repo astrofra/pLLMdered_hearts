@@ -20,11 +20,11 @@ done now, you know. So, that's all I can say. Um,
 
 0:00:23.440,0:00:30.720
 from my experience, I was part of the testers and 
-we were part of the imps and um, I don't know what
+we were part of the imps and I don't know what
 
 0:00:30.720,0:00:35.760
 it was like to be uh, in marketing really in 
-in a different part of the same company. I I
+in a different part of the same company. I
 
 0:00:35.760,0:00:41.440
 I can't really talk to that experience. So, yes, 
@@ -51,19 +51,19 @@ of the clicks and the testers were on the outer 
 margins of that and you know moving out in groups
 
 0:01:04.800,0:01:13.920
-um but it didn't it didn't feel that way so much 
-to to us. So from my experience um we had um gone
+but it didn't it didn't feel that way so much 
+to to us. So from my experience we had gone
 
 0:01:13.920,0:01:21.120
-through the layoffs the cornerstone disaster 
-the purchase of of infoccom by Activision and
+through the layoffs the Cornerstone disaster 
+the purchase of of infocom by Activision and
 
 0:01:21.120,0:01:28.800
-um uh Steve came to me. I was one of his testers 
+uh Steve came to me. I was one of his testers 
 and he came to me some Saturday morning and said
 
 0:01:28.800,0:01:33.360
-you know Amy you I I think I had told him it 
+you know Amy you I think I had told him it 
 would be a goal someday to be an imperson. It
 
 0:01:33.360,0:01:36.800
@@ -75,7 +75,7 @@ imp someday and someday soon. And after this 
 hiring, because of all the cutbacks and all,
 
 0:01:42.400,0:01:46.800
-um, there's not going to be another imp hired 
+there's not going to be another imp hired 
 until one of us dies. So, if you're going to go
 
 0:01:46.800,0:01:51.520
@@ -96,7 +96,7 @@ perfect springboard to become an imp because you
 
 0:02:09.600,0:02:14.320
 you knew the games and you were able to see how 
-they were being created. You know it wasn't I I
+they were being created. You know it wasn't I
 
 0:02:14.320,0:02:19.840
 suppose when you get a game completely done it's 
@@ -116,22 +116,22 @@ still being outside of it of of what it's like to
 
 0:02:34.960,0:02:39.840
 create it. So it's a it's a logical next step 
-to try to do it yourself. And um Steve helped
+to try to do it yourself. And Steve helped
 
 0:02:39.840,0:02:45.600
 me. He he was the one who said, you know, here's 
-how to do the interpreter. Here's how to um Oh,
+how to do the interpreter. Here's how to Oh,
 
 0:02:45.600,0:02:49.920
-I'm blanking on the words, you know, um compile 
-your pro, you know, compile your game. just the
+I'm blanking on the words, you know, compile 
+your pro-you know-compile your game. just the
 
 0:02:49.920,0:02:55.520
 steps to the the computer side. I had had some 
 programming experience, so that wasn't completely
 
 0:02:55.520,0:03:03.120
-out of my experience, but um I didn't know how to 
+out of my experience, but I didn't know how to 
 do it for ZIL. So, he was able to to show me to he
 
 0:03:03.120,0:03:08.000
