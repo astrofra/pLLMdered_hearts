@@ -4,6 +4,7 @@ import re
 import sys
 import time
 import unicodedata
+import subprocess
 
 import ollama
 import pexpect
@@ -23,6 +24,7 @@ ENABLE_LLM = True
 ENABLE_EMBED = False
 ENABLE_C64_RENDERER = True
 ENABLE_KEYCLICK_BEEP = True
+ENABLE_GODOT_VIEWER = True
 ENABLE_C64_FULLSCREEN = False
 C64_DISPLAY_INDEX = 1  # 1-based display number (1, 2, 3); None uses the primary monitor.
 C64_WINDOW_UNDECORATED = True
@@ -33,6 +35,7 @@ C64_FIT_TO_DISPLAY = True
 
 C64_FONT_PATH = None  # Using built-in fallback font; no external sprite sheet required.
 KEY_AUDIO_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "audio")
+GODOT_VIEWER_PATH = os.path.join(os.path.dirname(__file__), "..", "bin", "itw-viewer.exe")
 EMBED_MODEL = "qwen3-embedding"
 EMBED_OUT_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "game-embeddings.json")
 
@@ -202,6 +205,20 @@ def _play_buzz_beep(token=" "):
         sys.stdout.flush()
     except Exception:
         pass
+
+
+def _start_godot_viewer():
+    if not ENABLE_GODOT_VIEWER:
+        return None
+    viewer_path = os.path.abspath(GODOT_VIEWER_PATH)
+    if not os.path.isfile(viewer_path):
+        print(f"Godot viewer not found at {viewer_path}")
+        return None
+    try:
+        return subprocess.Popen([viewer_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception as exc:
+        print(f"Unable to start Godot viewer: {exc}")
+        return None
 
 
 def _exit_immediately():
@@ -451,6 +468,8 @@ if ENABLE_C64_RENDERER:
     except Exception as exc:
         print(f"Unable to start C64 renderer: {exc}")
         renderer = None
+
+_godot_viewer_process = _start_godot_viewer()
 
 prev_output = ""
 cmd_index = 0
