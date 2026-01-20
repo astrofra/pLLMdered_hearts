@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import re
@@ -20,7 +21,8 @@ AI_COMMENT_LABEL = "AI SAYS:"
 AI_COMMENT_FG = (255, 255, 255)
 AI_COMMENT_BG = (0, 0, 0)
 LLM_MODEL = 'ministral-3:14b' # 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
-ENABLE_LLM = True
+ENABLE_LLM = False
+ENABLE_RAW_OUTPUT = True
 ENABLE_EMBED = False
 ENABLE_C64_RENDERER = True
 ENABLE_KEYCLICK_BEEP = True
@@ -38,7 +40,10 @@ KEY_AUDIO_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "audio")
 GODOT_VIEWER_PATH = os.path.join(os.path.dirname(__file__), "..", "bin", "itw-viewer.exe")
 EMBED_MODEL = "qwen3-embedding"
 EMBED_OUT_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "game-embeddings.json")
+RAW_OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "game-raw-output.json")
 
+if ENABLE_RAW_OUTPUT and (ENABLE_LLM or ENABLE_EMBED):
+    raise ValueError("ENABLE_RAW_OUTPUT requires ENABLE_LLM and ENABLE_EMBED to be False.")
 if ENABLE_LLM and ENABLE_EMBED:
     raise ValueError("ENABLE_LLM and ENABLE_EMBED are mutually exclusive.")
 
@@ -347,6 +352,42 @@ def write_embeddings(path, data):
         json.dump(data, handle, ensure_ascii=True)
 
 
+def _sha_text(text):
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def load_raw_output(path):
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+        if isinstance(data, dict):
+            return data
+    except Exception:
+        pass
+    return {}
+
+
+def write_raw_output(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(data, handle, ensure_ascii=True)
+
+
+def update_raw_output(data, cleaned_text):
+    if not cleaned_text:
+        return False
+    cleaned_text = cleaned_text.strip()
+    if not cleaned_text:
+        return False
+    digest = _sha_text(cleaned_text)
+    if digest in data:
+        return False
+    data[digest] = cleaned_text
+    return True
+
+
 def build_prompt(prev_output, next_cmd):
     prompt = "You are playing Pludered Hearts, a text interactive fiction by Amy Briggs."
     prompt = prompt + "Here is what Wikipedia says about this game : "
@@ -476,6 +517,7 @@ cmd_index = 0
 prev_cmd = None
 pending_intro_ack = True
 last_cleaned = ""
+raw_output_map = load_raw_output(RAW_OUTPUT_PATH) if ENABLE_RAW_OUTPUT else {}
 
 # Unified loop for reading, displaying, and responding.
 while True:  # for step, cmd in enumerate(plundered_hearts_commands):
@@ -535,7 +577,12 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
 
     # Only proceed if the game shows a prompt and we still have commands to send.
     if ">" in raw_output and cmd_index < len(plundered_hearts_commands):
-        cmd = enhance_game_command(plundered_hearts_commands[cmd_index])
+        cmd = enhance_game_command(plundered_hearts_commands[cmd_index]) # Sanitize game command (remove the game's shortcuts)
+
+        if ENABLE_RAW_OUTPUT and prev_output:
+            if update_raw_output(raw_output_map, prev_output + "\nYour next move will be : " + cmd):
+                write_raw_output(RAW_OUTPUT_PATH, raw_output_map)
+            prev_output = ""
 
         if ENABLE_LLM:
             prompt = build_prompt(prev_output, cmd)
