@@ -85,10 +85,10 @@ def sanitize_renderer_text(text):
     if text is None:
         return ""
     placeholder = "__RSQ__"
-    text = text.replace("’", placeholder)
+    text = text.replace("'", placeholder)
     normalized = unicodedata.normalize("NFKD", text)
     ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
-    return ascii_text.replace(placeholder, "’")
+    return ascii_text.replace(placeholder, "'")
 
 # Match ANSI escape sequences like ESC[31m or ESC[2J
 ansi_escape = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
@@ -396,17 +396,20 @@ def load_itw_redux():
         return handle.read().strip()
 
 
-def build_prompt(prev_output, next_cmd):
-    prompt = """Plundered Hearts is a 1987 interactive fiction romance by Amy Briggs, published by Infocom, notable as Infocom's only romance title and the only one with a fixed female protagonist, released across many home computer platforms.
-                Set in the late 17th century, it follows a young woman kidnapped by pirates who actively drives the plot, navigating intrigue and romance between a heroic pirate and a manipulative governor, a bold genre shift praised for its prose and accessibility despite dividing Infocom's usual audience.
-                Here is what Amy Briggs recalls of her years at Infocom :"""
-    
-    prompt = prompt + load_itw_redux()
+def build_prompt(prev_output, cmd):
+    prompt = """Plundered Hearts is a 1987 interactive fiction romance by Amy Briggs, published by Infocom, notable as Infocom's only romance title and the only one with a fixed female protagonist.
+Set in the late 17th century, it follows a young woman kidnapped by pirates who actively drives the plot.
+Here is what Amy Briggs recalls of her years at Infocom:
+"""
+    prompt += load_itw_redux()
 
-    prompt = prompt + """What inspires you the testimony of Amy Briggs on her work and life experience at Infocom, sur la place des femmes dans nos imaginaires numériques, considering this passage of her game "Plundered Hearts" : """
-    prompt = prompt + """Answer in ONE SENTENCE, in neutral French, as if you were wondering yourself..."""
+    prompt += """
+What resonates, troubles, or raises questions for you in Amy Briggs's testimony, when put in relation with the following passage from Plundered Hearts?
+Answer in ONE SENTENCE, in neutral French, as a tentative inner thought rather than a conclusion.
+Avoid explicit sociological or political analysis unless it emerges unavoidably.
+"""
 
-    prompt = prompt + prev_output + "\nYour next move will be : " + cmd
+    prompt += prev_output + "\nYour next move will be : " + cmd
     return prompt
 
 # Official Amiga solution
