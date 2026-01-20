@@ -397,20 +397,22 @@ def load_itw_redux():
 
 
 def build_prompt(prev_output, cmd):
-    prompt = """Plundered Hearts is a 1987 interactive fiction romance by Amy Briggs, published by Infocom, notable as Infocom's only romance title and the only one with a fixed female protagonist.
+    prompt = """Plundered Hearts is a 1987 interactive fiction romance created by Amy Briggs, published by Infocom.
 Set in the late 17th century, it follows a young woman kidnapped by pirates who actively drives the plot.
 Here is what Amy Briggs recalls of her years at Infocom:
 """
     prompt += load_itw_redux()
 
     prompt += """
-What resonates, troubles, or raises questions for you in Amy Briggs's testimony, when put in relation with the following passage from Plundered Hearts?
-Answer in ONE SENTENCE, in neutral French, as a tentative inner thought rather than a conclusion.
-Avoid explicit sociological or political analysis unless it emerges unavoidably.
+What detail from Amy Briggs’s testimony quietly echoes, contradicts, or complicates what is happening in the following passage from Plundered Hearts?
+Your thought must be triggered by a concrete element mentioned in her testimony (a place, an object, a routine, a technical constraint, or a work habit).
+Answer in ONE OR TWO SENTENCES, in neutral French, plain text, as a tentative inner thought rather than a conclusion.
+Do not mention gender, identity, representation, or social categories explicitly.
 """
 
     prompt += prev_output + "\nYour next move will be : " + cmd
     return prompt
+
 
 # Official Amiga solution
 plundered_hearts_commands = [
