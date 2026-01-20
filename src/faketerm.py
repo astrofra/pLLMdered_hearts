@@ -22,8 +22,8 @@ AI_COMMENT_LABEL = "MISTRAL SAYS:"
 AI_COMMENT_FG = (255, 255, 255)
 AI_COMMENT_BG = (0, 0, 0)
 LLM_MODEL = 'ministral-3:14b' # 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
-ENABLE_LLM = False
-ENABLE_RAW_OUTPUT = True
+ENABLE_LLM = True
+ENABLE_RAW_OUTPUT = False
 ENABLE_EMBED = False
 ENABLE_C64_RENDERER = True
 ENABLE_KEYCLICK_BEEP = True
@@ -389,20 +389,24 @@ def update_raw_output(data, cleaned_text):
     return True
 
 
+def load_itw_redux():
+    base_dir = os.path.dirname(__file__)
+    src_path = os.path.join(base_dir, "..", "assets", "abriggs-itw-1250-words.txt")
+    with open(src_path, "r", encoding="utf-8") as handle:
+        return handle.read().strip()
+
+
 def build_prompt(prev_output, next_cmd):
-    prompt = "You are playing Pludered Hearts, a text interactive fiction by Amy Briggs."
-    prompt = prompt + "Here is what Wikipedia says about this game : "
-    prompt = prompt + plundered_hearts_wiki
-    prompt = prompt + plundered_hearts_fandom
+    prompt = """Plundered Hearts is a 1987 interactive fiction romance by Amy Briggs, published by Infocom, notable as Infocom's only romance title and the only one with a fixed female protagonist, released across many home computer platforms.
+                Set in the late 17th century, it follows a young woman kidnapped by pirates who actively drives the plot, navigating intrigue and romance between a heroic pirate and a manipulative governor, a bold genre shift praised for its prose and accessibility despite dividing Infocom's usual audience.
+                Here is what Amy Briggs recalls of her years at Infocom :"""
+    
+    prompt = prompt + load_itw_redux()
 
-    prompt = prompt + "Here is the latest output from the game : "
-    prompt = prompt + (prev_output or "")
+    prompt = prompt + """What inspires you the testimony of Amy Briggs on her work and life experience at Infocom, sur la place des femmes dans nos imaginaires numériques, considering this passage of her game "Plundered Hearts" : """
+    prompt = prompt + """Answer in ONE SENTENCE, in neutral French, as if you were wondering yourself..."""
 
-    prompt = prompt + "From the known solution of the game, you know the next good command will be : " + (next_cmd or "")
-    prompt = prompt + "Please give a strong feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, explaining why you would do this in this context."
-    prompt = prompt + "When thinking out loud, you refer yourself (and yourself only) as 'meuf'."
-    prompt = prompt + "Slang is okay, but avoid being to rude."
-    prompt = prompt + "One short paragraph maximum."
+    prompt = prompt + prev_output + "\nYour next move will be : " + cmd
     return prompt
 
 # Official Amiga solution
