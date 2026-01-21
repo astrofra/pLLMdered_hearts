@@ -626,7 +626,11 @@ def enhance_game_command(cmd):
 # run frotz through a terminal emulator, using the ascii mode
 # child = pexpect.spawn("frotz -p roms/PLUNDERE.z3", encoding='utf-8', timeout=5)
 from pexpect.popen_spawn import PopenSpawn
-child = PopenSpawn("frotz -p roms/PLUNDERE.z3", encoding='utf-8', timeout=5)
+
+def _start_game_process():
+    return PopenSpawn("frotz -p roms/PLUNDERE.z3", encoding='utf-8', timeout=5)
+
+child = None
 
 renderer = None
 if ENABLE_C64_RENDERER:
@@ -654,12 +658,6 @@ if ENABLE_C64_RENDERER:
 
 _godot_viewer_process = _start_godot_viewer()
 
-prev_output = ""
-prev_outputs = []
-cmd_index = 0
-prev_cmd = None
-pending_intro_ack = True
-last_cleaned = ""
 raw_output_map = load_raw_output(RAW_OUTPUT_PATH) if ENABLE_RAW_OUTPUT else {}
 video_embeddings = load_video_embeddings(VIDEO_EMBEDDINGS_PATH) if ENABLE_LLM else []
 recent_videos = []
@@ -667,169 +665,199 @@ last_video_played = None
 pending_video_entry = None
 next_allowed_video_time = 0.0
 
+restart_message = (
+    "Congratulations, you just finished pLLMdered_hearts.\n"
+    "The installation will now restart."
+)
+
 # Unified loop for reading, displaying, and responding.
 while True:  # for step, cmd in enumerate(plundered_hearts_commands):
-    _handle_quit_shortcut()
+    child = _start_game_process()
+    prev_output = ""
+    prev_outputs = []
+    cmd_index = 0
+    prev_cmd = None
+    pending_intro_ack = True
+    last_cleaned = ""
+    LAST_STATUS_BAR = ""
 
-    raw_output = ""
-    start_time = time.time()
-    timeout_seconds = 4
-    while time.time() - start_time < timeout_seconds:
-        try:
-            chunk = child.read_nonblocking(size=1024, timeout=0.3)
-            if not chunk:
+    while True:
+        _handle_quit_shortcut()
+
+        raw_output = ""
+        start_time = time.time()
+        timeout_seconds = 4
+        while time.time() - start_time < timeout_seconds:
+            try:
+                chunk = child.read_nonblocking(size=1024, timeout=0.3)
+                if not chunk:
+                    break
+                raw_output += chunk
+                if "***MORE***" in raw_output or  "[Press RETURN or ENTER to continue.]" in raw_output:
+                    raw_output = raw_output.replace("***MORE***", "")
+                    child.sendline("")
+                    continue
+                if ">" in raw_output:
+                    break
+            except pexpect.exceptions.TIMEOUT:
                 break
-            raw_output += chunk
-            if "***MORE***" in raw_output or  "[Press RETURN or ENTER to continue.]" in raw_output:
-                raw_output = raw_output.replace("***MORE***", "")
-                child.sendline("")
-                continue
-            if ">" in raw_output:
-                break
-        except pexpect.exceptions.TIMEOUT:
-            break
 
-    if not raw_output and pending_intro_ack:
-        try:
-            child.expect("Press RETURN or ENTER to begin", timeout=1)
-            raw_output = (child.before or "") + (child.after or "")
-        except pexpect.exceptions.TIMEOUT:
-            pass
+        if not raw_output and pending_intro_ack:
+            try:
+                child.expect("Press RETURN or ENTER to begin", timeout=1)
+                raw_output = (child.before or "") + (child.after or "")
+            except pexpect.exceptions.TIMEOUT:
+                pass
 
-    if raw_output:
-        cleaned = clean_output(raw_output)
-        last_cleaned = cleaned
-        if renderer and LAST_STATUS_BAR:
-            renderer.set_status_bar(LAST_STATUS_BAR)
-        if renderer:
-            if cleaned:
-                type_to_renderer(
-                    renderer,
-                    cleaned + "\n",
-                    base_delay=1 / 60.0,
-                    min_delay=1 / 240.0,
-                    max_delay=1 / 30.0,
-                    beep=True,
-                    word_mode=True,
-                )
-            else:
-                renderer.render_frame()
-        print(cleaned)
-        if cleaned:
-            prev_outputs.append(cleaned)
-            if len(prev_outputs) > 3:
-                prev_outputs = prev_outputs[-3:]
-            prev_output = "\n".join(prev_outputs)
-
-    if pending_intro_ack and ("Press RETURN or ENTER to begin" in raw_output or not raw_output):
-        child.sendline("")
-        pending_intro_ack = False
-        continue
-
-    # Only proceed if the game shows a prompt and we still have commands to send.
-    if ">" in raw_output and cmd_index < len(plundered_hearts_commands):
-        cmd = enhance_game_command(plundered_hearts_commands[cmd_index]) # Sanitize game command (remove the game's shortcuts)
-
-        if ENABLE_RAW_OUTPUT and prev_output:
-            if update_raw_output(raw_output_map, prev_output + "\nYour next move will be : " + cmd):
-                write_raw_output(RAW_OUTPUT_PATH, raw_output_map)
-            prev_output = ""
-
-        if ENABLE_LLM:
-            prompt = build_prompt(prev_output, cmd)
-            llm_commentary = None
-            retry = 0
-            status_color = None
-            status_text = None
+        if raw_output:
+            cleaned = clean_output(raw_output)
+            last_cleaned = cleaned
+            if renderer and LAST_STATUS_BAR:
+                renderer.set_status_bar(LAST_STATUS_BAR)
             if renderer:
-                status_color = getattr(renderer, "status_bar_bg", None)
-                status_text = LAST_STATUS_BAR
-                if status_text:
-                    renderer.set_status_bar(_status_with_ai_thinking(status_text))
-                renderer.set_status_bar_color((0, 0, 0))
-                renderer.render_frame()
-            while llm_commentary is None:
-                response = ollama.chat(
-                    model=LLM_MODEL,
-                    messages=[{
-                        'role': 'user',
-                        'content': prompt
-                        }]
-                )
-                llm_commentary = response.message.content
-                if retry > 0:
-                    print("Retry #" + str(retry))
-                retry = retry + 1
-            if renderer and status_color:
-                renderer.set_status_bar_color(status_color)
-                if status_text:
-                    renderer.set_status_bar(status_text)
-                renderer.render_frame()
-            next_video = None
-            next_video_entry = None
-            if llm_commentary and video_embeddings:
-                comment_vector, comment_norm = embed_commentary_text(llm_commentary)
-                next_video_entry = select_best_video(
-                    comment_vector,
-                    comment_norm,
-                    video_embeddings,
+                if cleaned:
+                    type_to_renderer(
+                        renderer,
+                        cleaned + "\n",
+                        base_delay=1 / 60.0,
+                        min_delay=1 / 240.0,
+                        max_delay=1 / 30.0,
+                        beep=True,
+                        word_mode=True,
+                    )
+                else:
+                    renderer.render_frame()
+            print(cleaned)
+            if cleaned:
+                prev_outputs.append(cleaned)
+                if len(prev_outputs) > 3:
+                    prev_outputs = prev_outputs[-3:]
+                prev_output = "\n".join(prev_outputs)
+
+        if pending_intro_ack and ("Press RETURN or ENTER to begin" in raw_output or not raw_output):
+            child.sendline("")
+            pending_intro_ack = False
+            continue
+
+        # Only proceed if the game shows a prompt and we still have commands to send.
+        if ">" in raw_output and cmd_index < len(plundered_hearts_commands):
+            cmd = enhance_game_command(plundered_hearts_commands[cmd_index]) # Sanitize game command (remove the game's shortcuts)
+
+            if ENABLE_RAW_OUTPUT and prev_output:
+                if update_raw_output(raw_output_map, prev_output + "\nYour next move will be : " + cmd):
+                    write_raw_output(RAW_OUTPUT_PATH, raw_output_map)
+                prev_output = ""
+
+            if ENABLE_LLM:
+                prompt = build_prompt(prev_output, cmd)
+                llm_commentary = None
+                retry = 0
+                status_color = None
+                status_text = None
+                if renderer:
+                    status_color = getattr(renderer, "status_bar_bg", None)
+                    status_text = LAST_STATUS_BAR
+                    if status_text:
+                        renderer.set_status_bar(_status_with_ai_thinking(status_text))
+                    renderer.set_status_bar_color((0, 0, 0))
+                    renderer.render_frame()
+                while llm_commentary is None:
+                    response = ollama.chat(
+                        model=LLM_MODEL,
+                        messages=[{
+                            'role': 'user',
+                            'content': prompt
+                            }]
+                    )
+                    llm_commentary = response.message.content
+                    if retry > 0:
+                        print("Retry #" + str(retry))
+                    retry = retry + 1
+                if renderer and status_color:
+                    renderer.set_status_bar_color(status_color)
+                    if status_text:
+                        renderer.set_status_bar(status_text)
+                    renderer.render_frame()
+                next_video_entry = None
+                if llm_commentary and video_embeddings:
+                    comment_vector, comment_norm = embed_commentary_text(llm_commentary)
+                    next_video_entry = select_best_video(
+                        comment_vector,
+                        comment_norm,
+                        video_embeddings,
+                        recent_videos,
+                        last_video_played,
+                    )
+                ai_thinking = llm_commentary + "\n"
+                print("<AI thinks : '" + ai_thinking + "'>\n")
+                if renderer and llm_commentary:
+                    cleaned_comment = sanitize_renderer_text(llm_commentary).strip()
+                    if cleaned_comment:
+                        display_comment = "\n> " + AI_COMMENT_LABEL + " " + cleaned_comment
+                    else:
+                        display_comment = "\n> " + AI_COMMENT_LABEL
+                    type_to_renderer(
+                        renderer,
+                        display_comment,
+                        base_delay=1 / 60.0,
+                        min_delay=1 / 240.0,
+                        max_delay=1 / 30.0,
+                        beep=False,
+                        word_mode=True,
+                        fg_color=AI_COMMENT_FG,
+                        bg_color=AI_COMMENT_BG,
+                    )
+                    type_to_renderer(
+                        renderer,
+                        "\n",
+                        base_delay=1 / 60.0,
+                        min_delay=1 / 240.0,
+                        max_delay=1 / 30.0,
+                        beep=False,
+                        word_mode=True,
+                    )
+                if next_video_entry:
+                    pending_video_entry = next_video_entry
+                pending_video_entry, next_allowed_video_time, last_video_played = maybe_emit_video_request(
+                    renderer,
+                    pending_video_entry,
                     recent_videos,
                     last_video_played,
+                    next_allowed_video_time,
+                    len(video_embeddings),
                 )
-            ai_thinking = llm_commentary + "\n"
-            print("<AI thinks : '" + ai_thinking + "'>\n")
-            if renderer and llm_commentary:
-                cleaned_comment = sanitize_renderer_text(llm_commentary).strip()
-                if cleaned_comment:
-                    display_comment = "\n> " + AI_COMMENT_LABEL + " " + cleaned_comment
-                else:
-                    display_comment = "\n> " + AI_COMMENT_LABEL
-                type_to_renderer(
-                    renderer,
-                    display_comment,
-                    base_delay=1 / 60.0,
-                    min_delay=1 / 240.0,
-                    max_delay=1 / 30.0,
-                    beep=False,
-                    word_mode=True,
-                    fg_color=AI_COMMENT_FG,
-                    bg_color=AI_COMMENT_BG,
-                )
-                type_to_renderer(
-                    renderer,
-                    "\n",
-                    base_delay=1 / 60.0,
-                    min_delay=1 / 240.0,
-                    max_delay=1 / 30.0,
-                    beep=False,
-                    word_mode=True,
-                )
-            if next_video_entry:
-                pending_video_entry = next_video_entry
-            pending_video_entry, next_allowed_video_time, last_video_played = maybe_emit_video_request(
-                renderer,
-                pending_video_entry,
-                recent_videos,
-                last_video_played,
-                next_allowed_video_time,
-                len(video_embeddings),
-            )
-        display_cmd = ">> " + cmd.strip()
-        print(display_cmd + "\n")
-        if renderer:
-            type_to_renderer(renderer, "\n" + display_cmd + "\n", beep=True)
-        child.sendline(" " + cmd)
-        prev_cmd = cmd
-        cmd_index += 1
+            display_cmd = ">> " + cmd.strip()
+            print(display_cmd + "\n")
+            if renderer:
+                type_to_renderer(renderer, "\n" + display_cmd + "\n", beep=True)
+            child.sendline(" " + cmd)
+            prev_cmd = cmd
+            cmd_index += 1
 
-    pending_video_entry, next_allowed_video_time, last_video_played = maybe_emit_video_request(
-        renderer,
-        pending_video_entry,
-        recent_videos,
-        last_video_played,
-        next_allowed_video_time,
-        len(video_embeddings),
-    )
+        pending_video_entry, next_allowed_video_time, last_video_played = maybe_emit_video_request(
+            renderer,
+            pending_video_entry,
+            recent_videos,
+            last_video_played,
+            next_allowed_video_time,
+            len(video_embeddings),
+        )
 
-    if cmd_index >= len(plundered_hearts_commands):
-        break
+        if cmd_index >= len(plundered_hearts_commands):
+            break
+
+    print(restart_message)
+    if renderer:
+        type_to_renderer(
+            renderer,
+            "\n" + restart_message + "\n",
+            base_delay=1 / 60.0,
+            min_delay=1 / 240.0,
+            max_delay=1 / 30.0,
+            beep=True,
+            word_mode=True,
+        )
+    try:
+        child.terminate(force=True)
+    except Exception:
+        pass
