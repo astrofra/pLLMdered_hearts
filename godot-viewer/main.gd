@@ -10,6 +10,10 @@ extends Control
 const VIDEO_FOLDER_PATH = "res://video"
 const SUBTITLE_EXTENSIONS = ["txt"]
 const USE_FRENCH_SUBTITLES = false
+const PREFILL_VIDEO_QUEUE = false
+const LLM_OUT_RELATIVE_PATH = "../llm_out"
+const LLM_OUT_OVERRIDE = ""
+const LLM_POLL_INTERVAL = 0.5
 const SUBTITLE_FONT_PATH = "res://fonts/RobotoCondensed-Regular.ttf"
 const SUBTITLE_FONT_SIZE = 36
 const SUBTITLE_SHADOW_OFFSET_RATIO = 0.17
@@ -29,6 +33,9 @@ var pending_next_video := ""
 var current_video_path := ""
 var current_is_noise := false
 var rng := RandomNumberGenerator.new()
+var llm_out_dir := ""
+var llm_poll_elapsed := 0.0
+var last_llm_file := ""
 
 func _ready() -> void:
 	_apply_window_settings()
@@ -37,10 +44,16 @@ func _ready() -> void:
 		video_player.finished.connect(_on_video_finished)
 	rng.randomize()
 	_scan_video_folder()
+	llm_out_dir = _resolve_llm_out_dir()
 	call_deferred("_update_video_cover")
 	subtitle_panel.visible = false
 	_apply_subtitle_style()
-	_play_next_from_queue()
+	if not PREFILL_VIDEO_QUEUE:
+		video_queue.clear()
+	if PREFILL_VIDEO_QUEUE:
+		_play_next_from_queue()
+	else:
+		_play_random_noise()
 
 func _apply_window_settings() -> void:
 	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, true)
@@ -141,7 +154,8 @@ func _apply_subtitle_layout() -> void:
 	subtitle_shadow_label.offset_right = shadow_offset
 	subtitle_shadow_label.offset_bottom = shadow_offset
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_poll_llm_out(delta)
 	if subtitles.is_empty():
 		return
 	var current_time = _get_video_time()
@@ -298,6 +312,7 @@ func _play_video(path: String, is_noise: bool) -> void:
 	current_video_path = path
 	current_is_noise = is_noise
 	video_player.stream = stream
+	video_player.loop = false
 	video_player.play()
 	current_subtitle_index = -1
 	if is_noise:
@@ -335,8 +350,16 @@ func _on_video_finished() -> void:
 			var next_path = pending_next_video
 			pending_next_video = ""
 			_play_video(next_path, false)
+			return
+		if not video_queue.is_empty():
+			var queued = video_queue.pop_front()
+			_play_video(queued, false)
+			return
+		if current_video_path != "":
+			_play_video(current_video_path, true)
 		return
 	if video_queue.is_empty():
+		_play_random_noise()
 		return
 	pending_next_video = video_queue.pop_front()
 	_play_random_noise()
@@ -382,4 +405,60 @@ func _resolve_video_path(filename: String) -> String:
 		path = VIDEO_FOLDER_PATH + "/" + filename
 	if FileAccess.file_exists(path):
 		return path
+	return ""
+
+func _resolve_llm_out_dir() -> String:
+	if LLM_OUT_OVERRIDE != "":
+		return LLM_OUT_OVERRIDE.simplify_path()
+	var base_dir = ""
+	if OS.has_feature("editor"):
+		base_dir = ProjectSettings.globalize_path("res://")
+	else:
+		base_dir = OS.get_executable_path().get_base_dir()
+	return base_dir.path_join(LLM_OUT_RELATIVE_PATH).simplify_path()
+
+func _poll_llm_out(delta: float) -> void:
+	llm_poll_elapsed += delta
+	if llm_poll_elapsed < LLM_POLL_INTERVAL:
+		return
+	llm_poll_elapsed = 0.0
+	if llm_out_dir == "":
+		return
+	var latest = _find_latest_llm_file()
+	if latest == "" or latest == last_llm_file:
+		return
+	last_llm_file = latest
+	var next_video = _read_llm_video_request(latest)
+	if next_video == "":
+		return
+	enqueue_video(next_video)
+	if not video_player.is_playing():
+		_play_next_from_queue()
+
+func _find_latest_llm_file() -> String:
+	var dir = DirAccess.open(llm_out_dir)
+	if dir == null:
+		return ""
+	dir.list_dir_begin()
+	var latest_name = ""
+	var name = dir.get_next()
+	while name != "":
+		if not dir.current_is_dir():
+			if name > latest_name:
+				latest_name = name
+		name = dir.get_next()
+	dir.list_dir_end()
+	if latest_name == "":
+		return ""
+	return llm_out_dir.path_join(latest_name)
+
+func _read_llm_video_request(path: String) -> String:
+	var file = FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return ""
+	var text = file.get_as_text()
+	for line in text.split("\n"):
+		var cleaned = line.strip_edges()
+		if cleaned != "":
+			return cleaned
 	return ""
