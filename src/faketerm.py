@@ -391,27 +391,26 @@ def update_raw_output(data, cleaned_text):
 
 def load_itw_redux():
     base_dir = os.path.dirname(__file__)
-    src_path = os.path.join(base_dir, "..", "assets", "abriggs-itw-1250-words.txt")
+    src_path = os.path.join(base_dir, "..", "assets", "abriggs-itw-750-words.txt")
     with open(src_path, "r", encoding="utf-8") as handle:
         return handle.read().strip()
 
 
 def build_prompt(prev_output, cmd):
-    prompt = """Plundered Hearts is a 1987 interactive fiction romance created by Amy Briggs, published by Infocom.
-Set in the late 17th century, it follows a young woman kidnapped by pirates who actively drives the plot.
-Here is what Amy Briggs recalls of her years at Infocom:
+    prompt = """Plundered Hearts is a 1987 interactive fiction by Amy Briggs.
+Here is an excerpt from Amy Briggs recalling her years at Infocom:
 """
     prompt += load_itw_redux()
 
     prompt += """
-What detail from Amy Briggs’s testimony quietly echoes, contradicts, or complicates what is happening in the following passage from Plundered Hearts?
-Your thought must be triggered by a concrete element mentioned in her testimony (a place, an object, a routine, a technical constraint, or a work habit).
-Answer in ONE OR TWO SENTENCES, in neutral French, plain text, as a tentative inner thought rather than a conclusion.
-Do not mention gender, identity, representation, or social categories explicitly.
+While reading the following moment from the game, what small, almost trivial detail from Amy Briggs’s testimony comes to mind?
+Either explain the game, or justify design choices, or generalize or analyze constraints,
+or mention memory, hardware, or technical limits, whatever seems relevant.
+Answer in ONE or TWO sentences, in neutral French, plain text, as a fleeting inner association.
 """
-
     prompt += prev_output + "\nYour next move will be : " + cmd
     return prompt
+
 
 
 # Official Amiga solution
@@ -505,6 +504,7 @@ if ENABLE_C64_RENDERER:
 _godot_viewer_process = _start_godot_viewer()
 
 prev_output = ""
+prev_outputs = []
 cmd_index = 0
 prev_cmd = None
 pending_intro_ack = True
@@ -560,7 +560,10 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                 renderer.render_frame()
         print(cleaned)
         if cleaned:
-            prev_output = cleaned
+            prev_outputs.append(cleaned)
+            if len(prev_outputs) > 3:
+                prev_outputs = prev_outputs[-3:]
+            prev_output = "\n".join(prev_outputs)
 
     if pending_intro_ack and ("Press RETURN or ENTER to begin" in raw_output or not raw_output):
         child.sendline("")
