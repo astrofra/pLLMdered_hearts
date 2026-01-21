@@ -359,6 +359,7 @@ func _on_video_finished() -> void:
 			_play_video(current_video_path, true)
 		return
 	if video_queue.is_empty():
+		_play_random_noise()
 		return
 	pending_next_video = video_queue.pop_front()
 	_play_random_noise()

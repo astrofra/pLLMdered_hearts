@@ -4,7 +4,7 @@ import sys
 import pygame
 
 # Toggle for Windows "always on top" behavior.
-ENABLE_ALWAYS_ON_TOP = False
+ENABLE_ALWAYS_ON_TOP = True
 ALWAYS_ON_TOP_REFRESH_MS = 1000
 
 # Commodore 64 style display settings
