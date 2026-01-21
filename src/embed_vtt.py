@@ -56,15 +56,15 @@ def list_text_files(input_dir):
     entries = [
         os.path.join(input_dir, name)
         for name in os.listdir(input_dir)
-        if name.lower().endswith(".txt")
+        if name.lower().endswith(".txt") and not name.lower().endswith("-fr.txt")
     ]
     return sorted(entries)
 
 
 def build_title(text, model):
     prompt = (
-        "Write a short, descriptive archive tape label for this transcript. "
-        "Use title case, no quotes, 3-7 words, FRENCH telex style.\n\n"
+        "Write an archive tape label for this transcript, summarizing the main topic. "
+        "Use title case, no quotes, 3-7 words, FRENCH, PLAIN TEXT, NO MARKDOWN.\n\n"
         f"Transcript:\n{text}"
     )
     response = ollama.chat(

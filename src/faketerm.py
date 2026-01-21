@@ -20,6 +20,7 @@ from knowledge_base import plundered_hearts_wiki, plundered_hearts_fandom
 
 AI_THINKING_STATUS = "<MISTRAL IS THINKING>"
 AI_COMMENT_LABEL = "MISTRAL SAYS:"
+AI_VIDEO_LABEL = "NEXT UP, PLAYING TAPE:"
 AI_COMMENT_FG = (255, 255, 255)
 AI_COMMENT_BG = (0, 0, 0)
 LLM_MODEL = 'ministral-3:14b' # 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
@@ -391,13 +392,21 @@ def load_video_embeddings(path):
             continue
         filename = item.get("filename")
         embedding = item.get("embedding")
+        sequence_title = item.get("sequence_title")
         if not filename or not isinstance(embedding, list):
             continue
         vector = [float(value) for value in embedding]
         norm = _vector_norm(vector)
         if norm <= 0.0:
             continue
-        entries.append({"filename": filename, "embedding": vector, "norm": norm})
+        entries.append(
+            {
+                "filename": filename,
+                "sequence_title": sequence_title,
+                "embedding": vector,
+                "norm": norm,
+            }
+        )
     return entries
 
 
@@ -423,22 +432,24 @@ def select_best_video(comment_vector, comment_norm, catalog, recent, last_video)
     scored = []
     for item in catalog:
         score = _cosine_similarity(comment_vector, comment_norm, item["embedding"], item["norm"])
-        scored.append((score, item["filename"]))
+        scored.append((score, item))
     scored.sort(reverse=True)
 
-    for _, filename in scored:
-        if filename == last_video:
+    for _, item in scored:
+        var_filename = item["filename"]
+        if var_filename == last_video:
             continue
-        if filename in recent:
+        if var_filename in recent:
             continue
-        return filename
+        return item
 
     if recent:
         recent.clear()
-        for _, filename in scored:
-            if filename == last_video:
+        for _, item in scored:
+            var_filename = item["filename"]
+            if var_filename == last_video:
                 continue
-            return filename
+            return item
 
     return scored[0][1] if scored else None
 
@@ -694,19 +705,17 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                 if status_text:
                     renderer.set_status_bar(status_text)
                 renderer.render_frame()
+            next_video = None
+            next_video_entry = None
             if llm_commentary and video_embeddings:
                 comment_vector, comment_norm = embed_commentary_text(llm_commentary)
-                next_video = select_best_video(
+                next_video_entry = select_best_video(
                     comment_vector,
                     comment_norm,
                     video_embeddings,
                     recent_videos,
                     last_video_played,
                 )
-                if next_video:
-                    write_llm_video_request(next_video)
-                    record_video_choice(next_video, len(video_embeddings), recent_videos)
-                    last_video_played = next_video
             ai_thinking = llm_commentary + "\n"
             print("<AI thinks : '" + ai_thinking + "'>\n")
             if renderer and llm_commentary:
@@ -735,6 +744,38 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                     beep=False,
                     word_mode=True,
                 )
+            if next_video_entry:
+                next_video = next_video_entry["filename"]
+                sequence_title = next_video_entry.get("sequence_title") or next_video
+                if renderer and sequence_title:
+                    cleaned_title = sanitize_renderer_text(sequence_title).strip()
+                    if cleaned_title:
+                        display_title = "\n> " + AI_VIDEO_LABEL + " " + cleaned_title
+                    else:
+                        display_title = "\n> " + AI_VIDEO_LABEL
+                    type_to_renderer(
+                        renderer,
+                        display_title,
+                        base_delay=1 / 60.0,
+                        min_delay=1 / 240.0,
+                        max_delay=1 / 30.0,
+                        beep=False,
+                        word_mode=True,
+                        fg_color=AI_COMMENT_FG,
+                        bg_color=AI_COMMENT_BG,
+                    )
+                    type_to_renderer(
+                        renderer,
+                        "\n",
+                        base_delay=1 / 60.0,
+                        min_delay=1 / 240.0,
+                        max_delay=1 / 30.0,
+                        beep=False,
+                        word_mode=True,
+                    )
+                write_llm_video_request(next_video)
+                record_video_choice(next_video, len(video_embeddings), recent_videos)
+                last_video_played = next_video
         display_cmd = ">> " + cmd.strip()
         print(display_cmd + "\n")
         if renderer:
