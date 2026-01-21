@@ -9,7 +9,7 @@ extends Control
 
 const VIDEO_FOLDER_PATH = "res://video"
 const SUBTITLE_EXTENSIONS = ["txt"]
-const USE_FRENCH_SUBTITLES = true
+const USE_FRENCH_SUBTITLES = false
 const SUBTITLE_FONT_PATH = "res://fonts/RobotoCondensed-Regular.ttf"
 const SUBTITLE_FONT_SIZE = 36
 const SUBTITLE_SHADOW_OFFSET_RATIO = 0.17
@@ -161,42 +161,8 @@ func _load_subtitles_for_video(video_path: String) -> Array:
 	for extension in SUBTITLE_EXTENSIONS:
 		var candidate = base + "." + extension
 		if FileAccess.file_exists(candidate):
-			if extension == "vtt":
-				return _parse_vtt(candidate)
 			return _parse_sbv(candidate)
 	return []
-
-func _parse_vtt(path: String) -> Array:
-	var cues: Array = []
-	var file = FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		push_error("Failed to open subtitles: %s" % path)
-		return cues
-	var lines = file.get_as_text().split("\n")
-	var idx = 0
-	while idx < lines.size():
-		var line = lines[idx].strip_edges()
-		if line == "" or line.begins_with("WEBVTT"):
-			idx += 1
-			continue
-		if line.find("-->") == -1:
-			idx += 1
-			continue
-		var parts = line.split("-->")
-		var start = _parse_timecode(parts[0].strip_edges())
-		var end_part = parts[1].strip_edges()
-		var end_str = end_part.split(" ")[0]
-		var end = _parse_timecode(end_str)
-		idx += 1
-		var text_lines: Array = []
-		while idx < lines.size() and lines[idx].strip_edges() != "":
-			text_lines.append(lines[idx].strip_edges())
-			idx += 1
-		var cue_text = " ".join(text_lines).strip_edges()
-		if start >= 0.0 and end >= 0.0 and cue_text != "":
-			cues.append({"start": start, "end": end, "text": cue_text})
-		idx += 1
-	return cues
 
 func _parse_sbv(path: String) -> Array:
 	var cues: Array = []
