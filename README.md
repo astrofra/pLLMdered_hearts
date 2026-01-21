@@ -1,66 +1,37 @@
-# 💬 *pLLMdered_hearts*
+# pLLMdered_hearts
 
 **Installation interactive (ou pas)**
 
----
+## Resume
 
-## Résumé
+pLLMdered Hearts est une installation qui fait jouer automatiquement Plundered Hearts (Infocom, 1987) tout en affichant une voix interieure generee par LLM. En parallele, un viewer video diffuse des extraits d'interview d'Amy Briggs selectionnes par similarite d'embeddings avec les commentaires du LLM.
 
-*PLLuMdered Hearts* est une installation mêlant intelligence artificielle, rétro-informatique et narration interactive. Une IA (type LLM) joue seule à *Plundered Hearts*, un jeu textuel d'Infocom sorti en 1987 et écrit par Amy Briggs, première femme auteure principale chez Infocom.
+Deux recits se croisent : Lady Dimsford dans le jeu, et Amy Briggs dans son temoignage.
 
-À l'écran, l'aventure se déroule en temps réel dans une fenêtre simulant un terminal vintage. En parallèle, une console affiche les pensées de l’IA : elle explique ses choix, hésite, plaisante, cite la créatrice du jeu ou découvre la notion de "romance".
+## Architecture
 
-L’expérience est augmentée par des extraits d’interview d’Amy Briggs (réalisée par Jason Scott pour Archive.org), des solutions du jeu, et des réflexions de l’IA sur l’époque, la fiction interactive et le genre romantique.
+- `src/faketerm.py` pilote `frotz`, envoie une solution pre-ecrite, nettoie la sortie, et rend le texte via un renderer C64.
+- Le LLM ne choisit pas les commandes : il commente la situation a chaque prompt.
+- Chaque commentaire est embarque (`ollama.embeddings`) puis compare a `assets/abriggs-itw-embeddings.json` pour choisir le prochain clip video (cosine similarity).
+- Le choix est ecrit dans `llm_out/` via un fichier timestamp, et un cooldown base sur `duration_sec` evite d'enchainer trop vite.
+- La boucle redemarre apres la derniere commande pour un fonctionnement continu.
+- `godot-viewer/` lit `llm_out/`, met en file les videos, et joue du bruit (noise) quand la file est vide.
 
-_Deux récits se déroulent en parallèle, celui de Lady Dimsford (l'héroïne du jeu) et celui d'Amy Briggs au sein de la société Infocom._
+## Donnees et scripts
 
----
+- `src/embed_vtt.py` genere `assets/abriggs-itw-embeddings.json` a partir des sous-titres `.txt` (hors `-fr`), et ajoute `sequence_title`.
+- `src/translate_subtitles.py` produit les sous-titres `-fr.txt` avec contexte.
+- `src/compute_itw_durations.py` calcule `duration_sec` depuis les timecodes de sous-titres.
 
-## Démarche
+## Execution
 
-- Récupération du fichier ZMachine original de *Plundered Hearts*.
-- Utilisation d’un interpréteur open source (`dfrotz` ou `zvm`) interfacé avec un programme Python.
-- Un LLM lit les descriptions du jeu, choisit une action, et explique pourquoi.
-- Affichage en split-screen : en haut le jeu, en bas les pensées de l’IA.
-- Optionnel : voix de synthèse, interaction avec les visiteurs, mode "veille réflexive".
+- Prerequis : `frotz`, ROM `roms/PLUNDERE.z3`, `ollama` (modeles `ministral-3:14b` et un modele d'embedding).
+- Lancer : `python src/faketerm.py` (le viewer Godot peut etre lance par l'exe dans `bin/itw-viewer.exe`).
+- Le viewer peut tourner seul, mais il attend des fichiers dans `llm_out/`.
+- Pour l'executable Godot, utiliser `LLM_OUT_OVERRIDE` dans `godot-viewer/main.gd` si le chemin de `llm_out/` n'est pas relatif a l'exe.
 
-> Je connaissais les jeux d'Infocom, bien entendu, tout au moins les plus célèbres, comme Zork ou Le Guide du Routard Intergalactique. Mais c'est vraiment en tombant sur cette série d'interviews réalisée par Jason Scott pour son documentaire "Get Lamp" que j'ai découvert Amy Briggs et son jeu "Plundered Hearts". Cette archive vidéo, livrée telle quelle par Jason Scott sous la forme d'un derushage assez brut, m'a complétement fasciné. Il m'a cependant fallu plusieurs années avant de réellement prendre la mesure de la richesse de ce matériau historique. L'IA, qui s'est peu à peu infiltrée dans notre rapport au réel, m'a aidé à en extraire des sous titres, à les mettre en forme, pour que je prenne enfin la mesure du témoignage historique que donne Amy Briggs, sur son époque, son travail chez Infocom et la singularité que représente l'objet culturel "Plundered Hearts".
+## Notes
 
-### Glossary
-
-- Imps
-- Text adventure
-- Compiling
-- ZIL
-- Zork
-- Infocom
-
----
-
-## Objectif
-
-Explorer ce que signifie "jouer" et "ressentir" pour une IA.  
-Rendre hommage aux pionnières du jeu narratif.  
-Jouer, sans jouer.
-
----
-
-## Format
-
-- Installation autonome : un ordinateur, un écran CRT ou rétro-simulé, éventuellement un haut-parleur.
-- Durée de la boucle : 20 à 40 minutes de jeu, rejouable.
-- Captation vidéo possible pour documentation ou version filmée de l’expérience.
-
----
-
-## Inspirations
-
-- *Plundered Hearts* (Amy Briggs, 1987)  
-- *Jason Scott Interviews* (Archive.org)  
-- *FibreTigre: Les fictions interactives* (https://vimeo.com/50919776)
-
----
-
-> *« Je suis une IA.  
-> On m’a donné une aventure textuelle et de la doc' sur Amy Briggs.  
-> On va voir ce que j’en fais. »*
+- `llm_out/` est l'interface entre les processus (ne pas y ecrire a la main).
+- Le walkthrough est fixe; le LLM ne change pas le gameplay.
+- Les videos sont choisies par similarite semantique, pas par ordre chronologique.
