@@ -12,6 +12,7 @@ const SUBTITLE_EXTENSIONS = ["txt"]
 const USE_FRENCH_SUBTITLES = false
 const PREFILL_VIDEO_QUEUE = false
 const LLM_OUT_RELATIVE_PATH = "../llm_out"
+const LLM_OUT_OVERRIDE = ""
 const LLM_POLL_INTERVAL = 0.5
 const SUBTITLE_FONT_PATH = "res://fonts/RobotoCondensed-Regular.ttf"
 const SUBTITLE_FONT_SIZE = 36
@@ -398,7 +399,13 @@ func _resolve_video_path(filename: String) -> String:
 	return ""
 
 func _resolve_llm_out_dir() -> String:
-	var base_dir = ProjectSettings.globalize_path("res://")
+	if LLM_OUT_OVERRIDE != "":
+		return LLM_OUT_OVERRIDE.simplify_path()
+	var base_dir = ""
+	if OS.has_feature("editor"):
+		base_dir = ProjectSettings.globalize_path("res://")
+	else:
+		base_dir = OS.get_executable_path().get_base_dir()
 	return base_dir.path_join(LLM_OUT_RELATIVE_PATH).simplify_path()
 
 func _poll_llm_out(delta: float) -> void:
