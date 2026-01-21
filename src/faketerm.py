@@ -1,5 +1,6 @@
 import hashlib
 import json
+import math
 import os
 import re
 import sys
@@ -39,6 +40,9 @@ C64_FONT_PATH = None  # Using built-in fallback font; no external sprite sheet r
 KEY_AUDIO_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "audio")
 GODOT_VIEWER_PATH = os.path.join(os.path.dirname(__file__), "..", "bin", "itw-viewer.exe")
 RAW_OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "game-raw-output.json")
+VIDEO_EMBEDDINGS_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "abriggs-itw-embeddings.json")
+VIDEO_EMBED_MODEL = "embeddinggemma:300m"
+LLM_OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "llm_out")
 
 if ENABLE_RAW_OUTPUT and ENABLE_LLM:
     raise ValueError("ENABLE_RAW_OUTPUT requires ENABLE_LLM to be False.")
@@ -355,6 +359,115 @@ def update_raw_output(data, cleaned_text):
     return True
 
 
+def _vector_norm(vector):
+    return math.sqrt(sum(value * value for value in vector))
+
+
+def _cosine_similarity(a_vec, a_norm, b_vec, b_norm):
+    if a_norm <= 0.0 or b_norm <= 0.0:
+        return -1.0
+    if len(a_vec) != len(b_vec):
+        return -1.0
+    dot = 0.0
+    for i in range(len(a_vec)):
+        dot += a_vec[i] * b_vec[i]
+    return dot / (a_norm * b_norm)
+
+
+def load_video_embeddings(path):
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+        if not isinstance(data, list):
+            return []
+    except Exception:
+        return []
+
+    entries = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        filename = item.get("filename")
+        embedding = item.get("embedding")
+        if not filename or not isinstance(embedding, list):
+            continue
+        vector = [float(value) for value in embedding]
+        norm = _vector_norm(vector)
+        if norm <= 0.0:
+            continue
+        entries.append({"filename": filename, "embedding": vector, "norm": norm})
+    return entries
+
+
+def embed_commentary_text(text):
+    text = (text or "").strip()
+    if not text:
+        return None, 0.0
+    try:
+        response = ollama.embeddings(model=VIDEO_EMBED_MODEL, prompt=text)
+    except Exception as exc:
+        print(f"Embedding failed: {exc}")
+        return None, 0.0
+    vector = response.get("embedding")
+    if not isinstance(vector, list):
+        return None, 0.0
+    vector = [float(value) for value in vector]
+    return vector, _vector_norm(vector)
+
+
+def select_best_video(comment_vector, comment_norm, catalog, recent, last_video):
+    if not catalog or comment_vector is None:
+        return None
+    scored = []
+    for item in catalog:
+        score = _cosine_similarity(comment_vector, comment_norm, item["embedding"], item["norm"])
+        scored.append((score, item["filename"]))
+    scored.sort(reverse=True)
+
+    for _, filename in scored:
+        if filename == last_video:
+            continue
+        if filename in recent:
+            continue
+        return filename
+
+    if recent:
+        recent.clear()
+        for _, filename in scored:
+            if filename == last_video:
+                continue
+            return filename
+
+    return scored[0][1] if scored else None
+
+
+def record_video_choice(filename, catalog_size, recent):
+    if not filename:
+        return
+    if filename not in recent:
+        recent.append(filename)
+    if catalog_size and len(recent) >= catalog_size:
+        recent.clear()
+
+
+def write_llm_video_request(filename):
+    if not filename:
+        return
+    os.makedirs(LLM_OUT_DIR, exist_ok=True)
+    now = time.time()
+    stamp = time.strftime("%Y%m%d_%H%M%S", time.localtime(now))
+    millis = int((now - int(now)) * 1000)
+    out_name = f"{stamp}_{millis:03d}.txt"
+    out_path = os.path.join(LLM_OUT_DIR, out_name)
+    try:
+        with open(out_path, "w", encoding="utf-8") as handle:
+            handle.write(filename.strip() + "\n")
+    except Exception as exc:
+        print(f"Unable to write llm_out file: {exc}")
+
+
 def load_itw_redux():
     base_dir = os.path.dirname(__file__)
     src_path = os.path.join(base_dir, "..", "assets", "abriggs-itw-750-words.txt")
@@ -479,6 +592,9 @@ prev_cmd = None
 pending_intro_ack = True
 last_cleaned = ""
 raw_output_map = load_raw_output(RAW_OUTPUT_PATH) if ENABLE_RAW_OUTPUT else {}
+video_embeddings = load_video_embeddings(VIDEO_EMBEDDINGS_PATH) if ENABLE_LLM else []
+recent_videos = []
+last_video_played = None
 
 # Unified loop for reading, displaying, and responding.
 while True:  # for step, cmd in enumerate(plundered_hearts_commands):
@@ -578,6 +694,19 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                 if status_text:
                     renderer.set_status_bar(status_text)
                 renderer.render_frame()
+            if llm_commentary and video_embeddings:
+                comment_vector, comment_norm = embed_commentary_text(llm_commentary)
+                next_video = select_best_video(
+                    comment_vector,
+                    comment_norm,
+                    video_embeddings,
+                    recent_videos,
+                    last_video_played,
+                )
+                if next_video:
+                    write_llm_video_request(next_video)
+                    record_video_choice(next_video, len(video_embeddings), recent_videos)
+                    last_video_played = next_video
             ai_thinking = llm_commentary + "\n"
             print("<AI thinks : '" + ai_thinking + "'>\n")
             if renderer and llm_commentary:
