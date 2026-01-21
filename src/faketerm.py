@@ -24,7 +24,6 @@ AI_COMMENT_BG = (0, 0, 0)
 LLM_MODEL = 'ministral-3:14b' # 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
 ENABLE_LLM = True
 ENABLE_RAW_OUTPUT = False
-ENABLE_EMBED = False
 ENABLE_C64_RENDERER = True
 ENABLE_KEYCLICK_BEEP = True
 ENABLE_GODOT_VIEWER = True
@@ -39,14 +38,10 @@ C64_FIT_TO_DISPLAY = True
 C64_FONT_PATH = None  # Using built-in fallback font; no external sprite sheet required.
 KEY_AUDIO_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "audio")
 GODOT_VIEWER_PATH = os.path.join(os.path.dirname(__file__), "..", "bin", "itw-viewer.exe")
-EMBED_MODEL = "qwen3-embedding"
-EMBED_OUT_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "game-embeddings.json")
 RAW_OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "game-raw-output.json")
 
-if ENABLE_RAW_OUTPUT and (ENABLE_LLM or ENABLE_EMBED):
-    raise ValueError("ENABLE_RAW_OUTPUT requires ENABLE_LLM and ENABLE_EMBED to be False.")
-if ENABLE_LLM and ENABLE_EMBED:
-    raise ValueError("ENABLE_LLM and ENABLE_EMBED are mutually exclusive.")
+if ENABLE_RAW_OUTPUT and ENABLE_LLM:
+    raise ValueError("ENABLE_RAW_OUTPUT requires ENABLE_LLM to be False.")
 
 def llm_response_is_valid(llm_commentary):
     if llm_commentary is None:
@@ -324,35 +319,6 @@ def type_to_renderer(
         prev = ch
 
 
-def embed_text(text):
-    if text is None:
-        return None
-    text = text.strip()
-    if not text:
-        return None
-    response = ollama.embeddings(model=EMBED_MODEL, prompt=text)
-    return response.get("embedding")
-
-
-def load_embeddings(path):
-    if not os.path.exists(path):
-        return []
-    try:
-        with open(path, "r", encoding="utf-8") as handle:
-            data = json.load(handle)
-        if isinstance(data, list):
-            return data
-    except Exception:
-        pass
-    return []
-
-
-def write_embeddings(path, data):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as handle:
-        json.dump(data, handle, ensure_ascii=True)
-
-
 def _sha_text(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -403,10 +369,13 @@ Here is an excerpt from Amy Briggs recalling her years at Infocom:
     prompt += load_itw_redux()
 
     prompt += """
-While reading the following moment from the game, what small, almost trivial detail from Amy Briggs’s testimony comes to mind?
-Either explain the game, or justify design choices, or generalize or analyze constraints,
-or mention memory, hardware, or technical limits, whatever seems relevant.
-Answer in ONE or TWO sentences, in neutral French, plain text, as a fleeting inner association.
+While reading the following moment from the game, your response may attend to
+any aspect of Amy Briggs’s testimony that feels relevant in this moment:
+a memory of daily work, the group dynamics at Infocom, informal mentoring practices, 
+commercial pressures, the struggle to legitimize video games as a growth engine versus 
+business software (such as Cornerstone), and her personal desire to write novels, 
+or technical detail, whatever seems relevant...
+Answer in TWO sentences, in neutral French, plain text, NO MARKDOWN, as a fleeting inner association.
 """
     prompt += prev_output + "\nYour next move will be : " + cmd
     return prompt
@@ -637,16 +606,6 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                     beep=False,
                     word_mode=True,
                 )
-        elif ENABLE_EMBED:
-            embeddings = load_embeddings(EMBED_OUT_PATH)
-            while len(embeddings) <= cmd_index:
-                embeddings.append(None)
-            embeddings[cmd_index] = {
-                "cleaned": embed_text(last_cleaned),
-                "cmd": embed_text(cmd),
-            }
-            write_embeddings(EMBED_OUT_PATH, embeddings)
-
         display_cmd = ">> " + cmd.strip()
         print(display_cmd + "\n")
         if renderer:
