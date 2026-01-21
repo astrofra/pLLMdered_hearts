@@ -1,0 +1,92 @@
+0:00:00.400,0:00:06.240
+Euh, tout à l'heure, je voulais dire, à propos de Steve et des conseils qu'il donnait,
+qu'il n'avait peut-être même pas besoin d'en donner,
+parce que je l'avais lu à l'époque où je travaillais là-bas.
+
+0:00:06.240,0:00:13.680
+J'avais lu une interview de lui — je crois que c'était
+dans Games Magazine — qui m'avait beaucoup marquée à l'époque,
+et dont je me souviens encore très bien aujourd'hui.
+
+0:00:13.680,0:00:18.160
+Il parlait de cette ligne très fine entre la réalité
+et la manière de mettre en place la description des jeux,
+la façon dont les pièces sont décrites.
+
+0:00:18.160,0:00:23.360
+Il disait : « Si tu dis que tu entres dans un bureau,
+avec un bureau dedans, le joueur va s'attendre
+à tout un ensemble d'objets typiques posés sur ce bureau :
+
+0:00:23.360,0:00:29.680
+une agrafeuse, un téléphone, un pot à crayons,
+enfin, qui sait ce qu'il va s'attendre à trouver ? »
+
+0:00:29.680,0:00:35.600
+Et tu n'as pas envie de perdre ton temps, en tant qu'implémenteur,
+à coder chaque objet possible qui pourrait se trouver sur un bureau,
+
+0:00:35.600,0:00:40.160
+alors que tout ce qui t'importe vraiment,
+c'est, par exemple, le stylo magique dans le pot à crayons.
+
+0:00:40.160,0:00:43.680
+Alors que si tu dis que tu entres dans le laboratoire
+ou la grotte d'un magicien,
+qui sait ce qu'il peut bien y avoir dans une grotte de magicien ?
+
+0:00:43.680,0:00:50.080
+Tu peux donc te permettre beaucoup plus de choses
+en situant l'action dans un environnement fantastique,
+où les gens n'ont pas d'attentes prédéterminées
+sur ce qui devrait s'y trouver.
+
+0:00:50.080,0:01:02.720
+Et je pense que c'est en partie de ça que tu parles :
+le travail des testeurs n'était pas seulement
+de trouver des bugs, le côté assez ennuyeux de la QA,
+à savoir : « où est-ce que le programme plante ? »
+
+0:01:02.720,0:01:08.800
+C'était aussi : à quel moment le monde que tu as inventé
+se fissure, et quelle est une approximation raisonnable
+des objets que les gens vont chercher,
+
+0:01:08.800,0:01:15.680
+sans avoir à alourdir le code avec absolument tout ce qui est possible.
+
+0:01:15.680,0:01:21.200
+Et on pourrait dire que, dans Plundered Hearts,
+je n'ai pas assez élargi ce champ,
+je n'ai pas anticipé suffisamment ces attentes,
+
+0:01:21.200,0:01:28.320
+puisque certaines personnes se plaignaient
+de ne pas pouvoir donner des coups de karaté, par exemple.
+
+0:01:28.320,0:01:35.040
+Et je sais que, encore aujourd'hui,
+je suis un peu gênée par le fait que, dans la version finale publiée,
+il y ait un bug qui survient dans les toutes premières actions.
+
+0:01:35.040,0:01:42.960
+Quand on fait quelque chose de parfaitement logique —
+je ne me souviens plus exactement de quoi —
+on obtient un résultat absurde.
+Mais c'est un vrai bug.
+
+0:01:42.960,0:01:47.600
+Par exemple, si tu tapes « prendre la boîte » :
+il y a une boîte sous le lit qui glisse vers l'extérieur,
+et si tu écris « prendre la boîte »
+plutôt que « attraper la boîte » ou quelque chose du genre,
+
+0:01:47.600,0:02:01.520
+ce qui est pourtant tout à fait logique,
+tu obtiens n'importe quoi en retour.
+Donc là, c'est un cas où les testeurs ont raté quelque chose —
+ou plutôt où j'ai raté quelque chose moi-même,
+et je dois en prendre la responsabilité —
+
+0:02:01.520,0:02:26.640
+à savoir une action très évidente à tester dès le début.

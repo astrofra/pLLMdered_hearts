@@ -9,6 +9,7 @@ extends Control
 
 const VIDEO_FOLDER_PATH = "res://video"
 const SUBTITLE_EXTENSIONS = ["txt"]
+const USE_FRENCH_SUBTITLES = true
 const SUBTITLE_FONT_PATH = "res://fonts/RobotoCondensed-Regular.ttf"
 const SUBTITLE_FONT_SIZE = 36
 const SUBTITLE_SHADOW_OFFSET_RATIO = 0.17
@@ -155,6 +156,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _load_subtitles_for_video(video_path: String) -> Array:
 	var base = video_path.get_basename()
+	if USE_FRENCH_SUBTITLES:
+		base = base + "-fr"
 	for extension in SUBTITLE_EXTENSIONS:
 		var candidate = base + "." + extension
 		if FileAccess.file_exists(candidate):

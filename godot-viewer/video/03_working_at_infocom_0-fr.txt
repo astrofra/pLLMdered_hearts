@@ -1,0 +1,150 @@
+0:00:00.320,0:00:04.240
+J'ai un point de vue très à la première personne
+sur l'ensemble de cette expérience. Oui, je ne peux pas dire
+
+0:00:04.240,0:00:09.280
+comment c'était d'un point de vue extérieur.
+C'était mon tout premier emploi après la fac, donc
+
+0:00:09.280,0:00:14.080
+je ne savais pas, à l'époque, en quoi c'était différent
+d'ailleurs. Je savais que c'était différent,
+
+0:00:14.080,0:00:17.840
+mais je ne savais pas à quel point.
+Euh, je n'ai pas continué à travailler dans l'industrie du jeu,
+
+0:00:17.840,0:00:23.440
+donc je ne sais pas vraiment en quoi c'était différent
+de la façon dont les jeux sont faits aujourd'hui.
+Voilà tout ce que je peux dire. Euh,
+
+0:00:23.440,0:00:30.720
+de mon point de vue, je faisais partie des testeurs,
+et nous étions proches des Imps,
+et je ne sais pas comment c'était,
+
+0:00:30.720,0:00:35.760
+par exemple, de travailler au marketing,
+ou dans une autre partie de la même entreprise.
+
+0:00:35.760,0:00:41.440
+Je ne peux pas vraiment parler de cette expérience.
+Donc oui, il y avait parfois un appel disant :
+« On va recruter un Imp. »
+
+0:00:41.440,0:00:44.880
+Mais je ne sais pas si seuls quelques-uns d'entre nous
+étaient au courant,:
+
+0:00:44.880,0:00:49.200
+ou si toute l'entreprise le savait.
+C'est ça, mon problème, je n'étais pas omnisciente.
+
+0:00:49.200,0:00:53.600
+Je ne savais pas vraiment ce qui se passait
+pour les autres, et j'ai appris plus tard
+
+0:00:53.600,0:00:58.800
+qu'il existait apparemment ce sentiment que nous,
+les Imps, formions un groupe très fermé,
+le plus fermé des cercles,
+
+0:00:58.800,0:01:04.800
+et que les testeurs se trouvaient en périphérie,
+puis d'autres groupes encore plus à l'extérieur.
+
+0:01:04.800,0:01:13.920
+Mais ce n'était pas du tout ce que nous ressentions,
+nous, de l'intérieur. Donc, de mon point de vue, nous avions traversé
+
+0:01:13.920,0:01:21.120
+les licenciements, le désastre de Cornerstone,
+le rachat d'Infocom par Activision, et
+
+0:01:21.120,0:01:28.800
+Steve est venu me voir.
+J'étais l'une de ses testeuses,
+et un samedi matin, il est venu me dire :
+
+0:01:28.800,0:01:33.360
+« Tu sais, Amy, je crois que tu m'avais dit un jour
+que ton objectif, un jour, serait de devenir Imp.
+C'était un peu un rêve lointain. »
+
+0:01:33.360,0:01:36.800
+Et il a ajouté :
+« On va recruter un Imp bientôt,
+
+0:01:36.800,0:01:42.400
+et après ce recrutement, 
+avec toutes les coupes budgétaires,
+
+0:01:42.400,0:01:46.800
+il n'y en aura probablement pas d'autre
+avant que l'un d'entre nous ne meure.
+Donc si tu veux tenter ta chance,
+
+0:01:46.800,0:01:51.520
+c'est maintenant ou jamais. »
+Alors j'ai dit :
+« D'accord… et qu'est-ce que je dois faire ? »
+
+0:01:51.520,0:01:57.360
+Il m'a répondu :
+« Eh bien, tu devrais écrire un jeu. »
+Alors j'ai écrit un jeu et j'ai postulé.
+Je crois que d'autres personnes 
+
+0:01:57.360,0:02:04.160
+ont postulé aussi, mais c'est moi qui ai été retenue.
+L'autre aspect important, c'est que les testeurs et les Imps
+
+0:02:04.160,0:02:09.600
+travaillaient étroitement ensemble. C'était donc un tremplin
+idéal pour devenir Imp, parce que vous connaissiez les jeux
+
+0:02:09.600,0:02:14.320
+et que vous pouviez voir comment ils étaient créés.
+Quand on voit un jeu terminé,
+
+0:02:14.320,0:02:19.840
+il est difficile d'imaginer toutes les étapes
+qui ont mené à sa création.
+
+0:02:19.840,0:02:23.840
+Mais quand on est testeur et qu'on est là dès le départ,
+dès les phases alpha, quand rien ne fonctionne encore,
+
+0:02:23.840,0:02:29.440
+qu'il n'y a pas d'histoire complète, 
+pas d'expérience achevée, 
+
+0:02:29.440,0:02:34.960
+on a une bien meilleure idée, 
+tout en restant extérieur,
+
+0:02:34.960,0:02:39.840
+de ce que signifie vraiment créer un jeu. C'est donc une
+étape suivante assez logique que d'essayer
+de le faire soi-même. Et Steve m'a aidée.
+
+0:02:39.840,0:02:45.600
+C'est lui qui m'a expliqué comment travailler
+avec l'interpréteur, comment…
+
+0:02:45.600,0:02:49.920
+je ne trouve plus les mots,
+comment compiler le jeu, toutes les étapes 
+
+0:02:49.920,0:02:55.520
+côté ordinateur. J'avais déjà un peu d'expérience en programmation,
+donc ce n'était pas totalement 
+
+0:02:55.520,0:03:03.120
+nouveau pour moi,
+mais je ne savais pas comment faire en ZIL.
+
+0:03:03.120,0:03:08.000
+Il ne m'a pas prise par la main, mais il m'a clairement montré
+ce qu'il fallait faire, et ce qui était nécessaire.
