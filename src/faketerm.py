@@ -393,6 +393,13 @@ def load_video_embeddings(path):
         filename = item.get("filename")
         embedding = item.get("embedding")
         sequence_title = item.get("sequence_title")
+        duration_raw = item.get("duration_sec")
+        duration_sec = None
+        if duration_raw is not None:
+            try:
+                duration_sec = float(duration_raw)
+            except (TypeError, ValueError):
+                duration_sec = None
         if not filename or not isinstance(embedding, list):
             continue
         vector = [float(value) for value in embedding]
@@ -403,6 +410,7 @@ def load_video_embeddings(path):
             {
                 "filename": filename,
                 "sequence_title": sequence_title,
+                "duration_sec": duration_sec,
                 "embedding": vector,
                 "norm": norm,
             }
@@ -461,6 +469,56 @@ def record_video_choice(filename, catalog_size, recent):
         recent.append(filename)
     if catalog_size and len(recent) >= catalog_size:
         recent.clear()
+
+
+def _get_video_duration(entry):
+    duration_sec = entry.get("duration_sec")
+    if duration_sec is None:
+        return 0.0
+    if duration_sec <= 0.0:
+        return 0.0
+    return duration_sec
+
+
+def maybe_emit_video_request(renderer, entry, recent, last_played, next_allowed, catalog_size):
+    if not entry:
+        return None, next_allowed, last_played
+    now = time.monotonic()
+    if now < next_allowed:
+        return entry, next_allowed, last_played
+    next_video = entry["filename"]
+    sequence_title = entry.get("sequence_title") or next_video
+    if renderer and sequence_title:
+        cleaned_title = sanitize_renderer_text(sequence_title).strip()
+        if cleaned_title:
+            display_title = "\n> " + AI_VIDEO_LABEL + " " + cleaned_title
+        else:
+            display_title = "\n> " + AI_VIDEO_LABEL
+        type_to_renderer(
+            renderer,
+            display_title,
+            base_delay=1 / 60.0,
+            min_delay=1 / 240.0,
+            max_delay=1 / 30.0,
+            beep=False,
+            word_mode=True,
+            fg_color=AI_COMMENT_FG,
+            bg_color=AI_COMMENT_BG,
+        )
+        type_to_renderer(
+            renderer,
+            "\n",
+            base_delay=1 / 60.0,
+            min_delay=1 / 240.0,
+            max_delay=1 / 30.0,
+            beep=False,
+            word_mode=True,
+        )
+    write_llm_video_request(next_video)
+    record_video_choice(next_video, catalog_size, recent)
+    last_played = next_video
+    next_allowed = now + _get_video_duration(entry)
+    return None, next_allowed, last_played
 
 
 def write_llm_video_request(filename):
@@ -606,6 +664,8 @@ raw_output_map = load_raw_output(RAW_OUTPUT_PATH) if ENABLE_RAW_OUTPUT else {}
 video_embeddings = load_video_embeddings(VIDEO_EMBEDDINGS_PATH) if ENABLE_LLM else []
 recent_videos = []
 last_video_played = None
+pending_video_entry = None
+next_allowed_video_time = 0.0
 
 # Unified loop for reading, displaying, and responding.
 while True:  # for step, cmd in enumerate(plundered_hearts_commands):
@@ -745,37 +805,15 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                     word_mode=True,
                 )
             if next_video_entry:
-                next_video = next_video_entry["filename"]
-                sequence_title = next_video_entry.get("sequence_title") or next_video
-                if renderer and sequence_title:
-                    cleaned_title = sanitize_renderer_text(sequence_title).strip()
-                    if cleaned_title:
-                        display_title = "\n> " + AI_VIDEO_LABEL + " " + cleaned_title
-                    else:
-                        display_title = "\n> " + AI_VIDEO_LABEL
-                    type_to_renderer(
-                        renderer,
-                        display_title,
-                        base_delay=1 / 60.0,
-                        min_delay=1 / 240.0,
-                        max_delay=1 / 30.0,
-                        beep=False,
-                        word_mode=True,
-                        fg_color=AI_COMMENT_FG,
-                        bg_color=AI_COMMENT_BG,
-                    )
-                    type_to_renderer(
-                        renderer,
-                        "\n",
-                        base_delay=1 / 60.0,
-                        min_delay=1 / 240.0,
-                        max_delay=1 / 30.0,
-                        beep=False,
-                        word_mode=True,
-                    )
-                write_llm_video_request(next_video)
-                record_video_choice(next_video, len(video_embeddings), recent_videos)
-                last_video_played = next_video
+                pending_video_entry = next_video_entry
+            pending_video_entry, next_allowed_video_time, last_video_played = maybe_emit_video_request(
+                renderer,
+                pending_video_entry,
+                recent_videos,
+                last_video_played,
+                next_allowed_video_time,
+                len(video_embeddings),
+            )
         display_cmd = ">> " + cmd.strip()
         print(display_cmd + "\n")
         if renderer:
@@ -783,6 +821,15 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
         child.sendline(" " + cmd)
         prev_cmd = cmd
         cmd_index += 1
+
+    pending_video_entry, next_allowed_video_time, last_video_played = maybe_emit_video_request(
+        renderer,
+        pending_video_entry,
+        recent_videos,
+        last_video_played,
+        next_allowed_video_time,
+        len(video_embeddings),
+    )
 
     if cmd_index >= len(plundered_hearts_commands):
         break
