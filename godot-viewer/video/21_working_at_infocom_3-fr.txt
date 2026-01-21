@@ -1,0 +1,57 @@
+0:00:00.160,0:00:06.000
+Euh, et lors des déjeuners des Imps, l'atmosphère était bienveillante.
+Je ne me souviens pas — enfin,
+
+0:00:06.000,0:00:11.600
+je sais qu'il y a forcément eu des disputes entre Imps,
+et je sais qu'il y en a eu,
+mais je ne me souviens de rien de tel lors de ces déjeuners,
+
+0:00:11.600,0:00:18.320
+entre nous, à part une forme de soutien :
+du genre « mince, j'ai une énigme,
+je n'arrive pas à comprendre comment la résoudre,
+
+0:00:18.320,0:00:23.920
+c'est pénible.
+Comment est-ce qu'on résout cette énigme ? »
+
+0:00:23.920,0:00:29.920
+Ou plutôt : comment moi, je la résous.
+On ne posait pas de questions de code,
+parce qu'autour d'une table de déjeuner,
+
+0:00:29.920,0:00:35.920
+ce n'est pas un bon endroit pour résoudre
+des problèmes de programmation.
+Donc ce n'était pas ce genre de discussions.
+
+0:00:35.920,0:00:41.280
+À la place, on allait voir les gens individuellement.
+Stu Galley, c'était généralement la personne
+avec qui je faisais le point.
+
+0:00:41.280,0:00:47.040
+Enfin, ça dépendait de ce que je cherchais.
+Stu, c'était la personne vers qui j'allais
+pour les questions de parseur.
+
+0:00:47.040,0:00:55.280
+Pour des choses vraiment complexes en programmation,
+on voyait d'autres personnes.
+Steve, c'était pour les vraies questions de comédie,
+
+0:00:55.280,0:01:02.720
+tu vois, comment rendre quelque chose drôle,
+ou simplement comment se sortir d'un mauvais pas
+dans l'histoire.
+
+0:00:01:02.720,0:01:09.600
+Et donc, pendant les déjeuners,
+c'était surtout une discussion libre,
+où tout le monde parlait et faisait des suggestions.
+
+0:00:01:09.600,0:01:15.680
+C'est à peu près comme ça que ça fonctionnait :
+chacun travaillait sur son propre projet,
+mais tous ensemble.

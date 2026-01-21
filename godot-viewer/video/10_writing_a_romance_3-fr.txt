@@ -1,0 +1,44 @@
+0:00:00.160,0:00:07.520
+Eh bien, j'ai utilisé un analyseur syntaxique qui existait déjà
+et j'ai dû le réduire drastiquement. Je ne sais pas
+
+0:00:07.520,0:00:12.080
+si quelqu'un t'a déjà raconté mon histoire :
+comme c'était mon premier jeu, ils m'ont donné
+
+0:00:12.080,0:00:17.600
+neuf mois pour l'écrire, et je l'ai terminé en six.
+Euh, j'ai ensuite passé les trois mois suivants
+
+0:00:17.600,0:00:23.040
+à couper des choses. C'était beaucoup trop gros
+pour tenir en mémoire, parce que c'était le dernier jeu
+
+0:00:23.040,0:00:29.280
+à devoir rentrer — je crois — sur un Commodore 64.
+Donc tout ce contenu formidable a dû être supprimé.
+
+0:00:29.280,0:00:36.640
+J'ai donc énormément coupé, mais je suis partie
+d'un parseur « boîte noire ».
+Et je ne pense pas être partie d'un autre jeu.
+
+0:00:36.640,0:00:42.800
+Enfin, c'est possible, parce que l'approche était différente.
+Si c'était le cas, ça aurait été Prism,
+
+0:00:42.800,0:00:46.880
+parce que, dans mon esprit, c'était celui qui se rapprochait le plus
+de Mind Forever Voyaging — pardon,
+
+0:00:46.880,0:00:51.760
+celui que nous appelions Prism pendant le développement.
+Euh, mais je suis presque certaine que non,
+
+0:00:51.760,0:00:55.440
+parce que ce projet était tellement énorme
+que j'aurais passé mes six premiers mois
+
+0:00:55.440,0:00:58.480
+à en couper des morceaux juste pour le rendre
+assez petit pour pouvoir le compiler.

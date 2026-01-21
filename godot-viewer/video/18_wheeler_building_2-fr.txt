@@ -1,0 +1,92 @@
+0:00:00.320,0:00:07.520
+Quand on entrait, on arrivait à l'accueil avec le marketing,
+puis ensuite on avançait : à droite, on allait vers les Imps,
+à gauche, vers la zone de test.
+
+0:00:07.520,0:00:11.920
+Encore plus à gauche, en faisant le tour du bâtiment,
+on arrivait là où ils développaient le parseur,
+Tim Anderson et ceux que je considérais
+comme les vrais programmeurs.
+
+0:00:11.920,0:00:16.000
+Je me corrige : pas le parseur,
+les interpréteurs étaient écrits de ce côté-là,
+et ensuite, l'administration — les « grands chefs » —
+étaient au bout du couloir, seuls, dans un coin.
+
+0:00:16.000,0:00:26.160
+Et la zone des Imps avait ce que nous appelions
+le « bowling alley ».
+C'était une très grande pièce ouverte,
+avec des fenêtres au fond,
+située à l'angle du bâtiment.
+
+0:00:26.160,0:00:32.480
+Donc tous les Imps du côté nord avaient des fenêtres
+dans leurs bureaux, avec John Palace dans le bureau d'angle,
+puis une grande série de fenêtres pour le bowling alley,
+et ensuite une rangée de bureaux côté sud,
+
+0:00:32.480,0:00:38.480
+avec Steve Meretzky qui avait le bureau avec fenêtre côté sud,
+et nous autres, nous avions des bureaux fermés,
+sans fenêtres, du côté sud.
+
+0:00:38.480,0:00:44.720
+Et on parlait des « enfants du côté nord »
+et des « enfants du côté sud ».
+Les enfants du côté nord étaient les vrais programmeurs,
+et ceux du côté sud, juste des bidouilleurs,
+avec des capacités créatives,
+mais qui luttaient avec la programmation.
+
+0:00:44.720,0:00:51.680
+C'était ça, le mythe.
+Parce qu'en réalité, Steve était du côté sud,
+mais il n'était pas considéré comme l'un des « vrais » programmeurs,
+et il n'avait pas de diplôme en informatique.
+Pourtant, il méritait clairement d'être du côté nord.
+Je pense qu'il appréciait plutôt d'être du côté sud.
+
+0:00:51.680,0:00:57.760
+Donc le côté sud, c'était moi, Jeff O'Neill et Hollywood —
+qui, en réalité, n'était pas côté sud,
+mais plutôt à l'est,
+dans un bureau sans fenêtres lui aussi.
+
+0:00:57.760,0:01:04.640
+Je crois que l'idée initiale était que,
+une fois lancés et devenus célèbres —
+en supposant même qu'on continuerait à faire des jeux —,
+il y aurait des boxes au centre de cette grande pièce,
+et que les jeux sortiraient de partout,
+avec plein de gens travaillant en même temps.
+
+0:01:04.640,0:01:13.680
+On arrivait quand on arrivait.
+Je ne me souviens pas avoir jamais été pressée,
+et je ne suis pas du matin,
+donc je ne pense pas que ce soit tôt.
+Les portes étaient toujours ouvertes,
+
+0:01:13.680,0:01:22.160
+sauf dans quelques cas où les gens ne voulaient pas être dérangés,
+mais c'était vraiment une manière de travailler formidable.
+
+0:01:22.160,0:01:27.680
+Tous les Imps travaillaient sur leurs propres projets,
+séparément,
+mais dans un environnement partagé.
+
+0:01:27.680,0:01:33.360
+Pour moi, c'était presque l'environnement parfait :
+il y avait l'esprit d'équipe,
+le sentiment que nous travaillions tous ensemble,
+sans avoir à partager mon travail avec qui que ce soit.
+
+0:01:33.360,0:02:51.040
+Il n'y avait pas besoin de travailler en binôme.
+D'autres travaillent bien à deux, moi pas.
+Mais j'avais le soutien du groupe,
+sans les intrusions individuelles.

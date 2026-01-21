@@ -1,4 +1,6 @@
+import hashlib
 import json
+import math
 import os
 import re
 import sys
@@ -12,16 +14,18 @@ import pexpect
 import pygame
 
 from c64renderer import C64Renderer
+from knowledge_base import plundered_hearts_wiki, plundered_hearts_fandom
 
 # os.environ["OLLAMA_NO_CUDA"] = "1"
 
-AI_THINKING_STATUS = "<AI IS THINKING>"
-AI_COMMENT_LABEL = "AI SAYS:"
+AI_THINKING_STATUS = "<MISTRAL IS THINKING>"
+AI_COMMENT_LABEL = "MISTRAL SAYS:"
+AI_VIDEO_LABEL = "NEXT UP, PLAYING TAPE:"
 AI_COMMENT_FG = (255, 255, 255)
 AI_COMMENT_BG = (0, 0, 0)
 LLM_MODEL = 'ministral-3:14b' # 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
 ENABLE_LLM = True
-ENABLE_EMBED = False
+ENABLE_RAW_OUTPUT = False
 ENABLE_C64_RENDERER = True
 ENABLE_KEYCLICK_BEEP = True
 ENABLE_GODOT_VIEWER = True
@@ -36,11 +40,13 @@ C64_FIT_TO_DISPLAY = True
 C64_FONT_PATH = None  # Using built-in fallback font; no external sprite sheet required.
 KEY_AUDIO_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "audio")
 GODOT_VIEWER_PATH = os.path.join(os.path.dirname(__file__), "..", "bin", "itw-viewer.exe")
-EMBED_MODEL = "qwen3-embedding"
-EMBED_OUT_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "game-embeddings.json")
+RAW_OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "game-raw-output.json")
+VIDEO_EMBEDDINGS_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "abriggs-itw-embeddings.json")
+VIDEO_EMBED_MODEL = "embeddinggemma:300m"
+LLM_OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "llm_out")
 
-if ENABLE_LLM and ENABLE_EMBED:
-    raise ValueError("ENABLE_LLM and ENABLE_EMBED are mutually exclusive.")
+if ENABLE_RAW_OUTPUT and ENABLE_LLM:
+    raise ValueError("ENABLE_RAW_OUTPUT requires ENABLE_LLM to be False.")
 
 def llm_response_is_valid(llm_commentary):
     if llm_commentary is None:
@@ -79,10 +85,10 @@ def sanitize_renderer_text(text):
     if text is None:
         return ""
     placeholder = "__RSQ__"
-    text = text.replace("’", placeholder)
+    text = text.replace("'", placeholder)
     normalized = unicodedata.normalize("NFKD", text)
     ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
-    return ascii_text.replace(placeholder, "’")
+    return ascii_text.replace(placeholder, "'")
 
 # Match ANSI escape sequences like ESC[31m or ESC[2J
 ansi_escape = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
@@ -318,50 +324,245 @@ def type_to_renderer(
         prev = ch
 
 
-def embed_text(text):
-    if text is None:
-        return None
-    text = text.strip()
-    if not text:
-        return None
-    response = ollama.embeddings(model=EMBED_MODEL, prompt=text)
-    return response.get("embedding")
+def _sha_text(text):
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def load_embeddings(path):
+def load_raw_output(path):
     if not os.path.exists(path):
-        return []
+        return {}
     try:
         with open(path, "r", encoding="utf-8") as handle:
             data = json.load(handle)
-        if isinstance(data, list):
+        if isinstance(data, dict):
             return data
     except Exception:
         pass
-    return []
+    return {}
 
 
-def write_embeddings(path, data):
+def write_raw_output(path, data):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as handle:
         json.dump(data, handle, ensure_ascii=True)
 
 
-def build_prompt(prev_output, next_cmd):
-    prompt = "You are playing Pludered Hearts, a text interactive fiction by Amy Briggs."
-    prompt = prompt + "Here is what Wikipedia says about this game : "
-    prompt = prompt + plundered_hearts_wiki
-    prompt = prompt + plundered_hearts_fandom
+def update_raw_output(data, cleaned_text):
+    if not cleaned_text:
+        return False
+    cleaned_text = cleaned_text.strip()
+    if not cleaned_text:
+        return False
+    digest = _sha_text(cleaned_text)
+    if digest in data:
+        return False
+    data[digest] = cleaned_text
+    return True
 
-    prompt = prompt + "Here is the latest output from the game : "
-    prompt = prompt + (prev_output or "")
 
-    prompt = prompt + "From the known solution of the game, you know the next good command will be : " + (next_cmd or "")
-    prompt = prompt + "Please give a strong feminist point of view over the current situation, in a familiar or slang-ish way, without mentioning the feminism, IN FRENCH ARGOT, FIRST PERSON, explaining why you would do this in this context."
-    prompt = prompt + "When thinking out loud, you refer yourself (and yourself only) as 'meuf'."
-    prompt = prompt + "Slang is okay, but avoid being to rude."
-    prompt = prompt + "One short paragraph maximum."
+def _vector_norm(vector):
+    return math.sqrt(sum(value * value for value in vector))
+
+
+def _cosine_similarity(a_vec, a_norm, b_vec, b_norm):
+    if a_norm <= 0.0 or b_norm <= 0.0:
+        return -1.0
+    if len(a_vec) != len(b_vec):
+        return -1.0
+    dot = 0.0
+    for i in range(len(a_vec)):
+        dot += a_vec[i] * b_vec[i]
+    return dot / (a_norm * b_norm)
+
+
+def load_video_embeddings(path):
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+        if not isinstance(data, list):
+            return []
+    except Exception:
+        return []
+
+    entries = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        filename = item.get("filename")
+        embedding = item.get("embedding")
+        sequence_title = item.get("sequence_title")
+        duration_raw = item.get("duration_sec")
+        duration_sec = None
+        if duration_raw is not None:
+            try:
+                duration_sec = float(duration_raw)
+            except (TypeError, ValueError):
+                duration_sec = None
+        if not filename or not isinstance(embedding, list):
+            continue
+        vector = [float(value) for value in embedding]
+        norm = _vector_norm(vector)
+        if norm <= 0.0:
+            continue
+        entries.append(
+            {
+                "filename": filename,
+                "sequence_title": sequence_title,
+                "duration_sec": duration_sec,
+                "embedding": vector,
+                "norm": norm,
+            }
+        )
+    return entries
+
+
+def embed_commentary_text(text):
+    text = (text or "").strip()
+    if not text:
+        return None, 0.0
+    try:
+        response = ollama.embeddings(model=VIDEO_EMBED_MODEL, prompt=text)
+    except Exception as exc:
+        print(f"Embedding failed: {exc}")
+        return None, 0.0
+    vector = response.get("embedding")
+    if not isinstance(vector, list):
+        return None, 0.0
+    vector = [float(value) for value in vector]
+    return vector, _vector_norm(vector)
+
+
+def select_best_video(comment_vector, comment_norm, catalog, recent, last_video):
+    if not catalog or comment_vector is None:
+        return None
+    scored = []
+    for item in catalog:
+        score = _cosine_similarity(comment_vector, comment_norm, item["embedding"], item["norm"])
+        scored.append((score, item))
+    scored.sort(reverse=True)
+
+    for _, item in scored:
+        var_filename = item["filename"]
+        if var_filename == last_video:
+            continue
+        if var_filename in recent:
+            continue
+        return item
+
+    if recent:
+        recent.clear()
+        for _, item in scored:
+            var_filename = item["filename"]
+            if var_filename == last_video:
+                continue
+            return item
+
+    return scored[0][1] if scored else None
+
+
+def record_video_choice(filename, catalog_size, recent):
+    if not filename:
+        return
+    if filename not in recent:
+        recent.append(filename)
+    if catalog_size and len(recent) >= catalog_size:
+        recent.clear()
+
+
+def _get_video_duration(entry):
+    duration_sec = entry.get("duration_sec")
+    if duration_sec is None:
+        return 0.0
+    if duration_sec <= 0.0:
+        return 0.0
+    return duration_sec
+
+
+def maybe_emit_video_request(renderer, entry, recent, last_played, next_allowed, catalog_size):
+    if not entry:
+        return None, next_allowed, last_played
+    now = time.monotonic()
+    if now < next_allowed:
+        return entry, next_allowed, last_played
+    next_video = entry["filename"]
+    sequence_title = entry.get("sequence_title") or next_video
+    if renderer and sequence_title:
+        cleaned_title = sanitize_renderer_text(sequence_title).strip()
+        if cleaned_title:
+            display_title = "\n> " + AI_VIDEO_LABEL + " " + cleaned_title
+        else:
+            display_title = "\n> " + AI_VIDEO_LABEL
+        type_to_renderer(
+            renderer,
+            display_title,
+            base_delay=1 / 60.0,
+            min_delay=1 / 240.0,
+            max_delay=1 / 30.0,
+            beep=False,
+            word_mode=True,
+            fg_color=AI_COMMENT_FG,
+            bg_color=AI_COMMENT_BG,
+        )
+        type_to_renderer(
+            renderer,
+            "\n",
+            base_delay=1 / 60.0,
+            min_delay=1 / 240.0,
+            max_delay=1 / 30.0,
+            beep=False,
+            word_mode=True,
+        )
+    write_llm_video_request(next_video)
+    record_video_choice(next_video, catalog_size, recent)
+    last_played = next_video
+    next_allowed = now + _get_video_duration(entry)
+    return None, next_allowed, last_played
+
+
+def write_llm_video_request(filename):
+    if not filename:
+        return
+    os.makedirs(LLM_OUT_DIR, exist_ok=True)
+    now = time.time()
+    stamp = time.strftime("%Y%m%d_%H%M%S", time.localtime(now))
+    millis = int((now - int(now)) * 1000)
+    out_name = f"{stamp}_{millis:03d}.txt"
+    out_path = os.path.join(LLM_OUT_DIR, out_name)
+    try:
+        with open(out_path, "w", encoding="utf-8") as handle:
+            handle.write(filename.strip() + "\n")
+    except Exception as exc:
+        print(f"Unable to write llm_out file: {exc}")
+
+
+def load_itw_redux():
+    base_dir = os.path.dirname(__file__)
+    src_path = os.path.join(base_dir, "..", "assets", "abriggs-itw-750-words.txt")
+    with open(src_path, "r", encoding="utf-8") as handle:
+        return handle.read().strip()
+
+
+def build_prompt(prev_output, cmd):
+    prompt = """Plundered Hearts is a 1987 interactive fiction by Amy Briggs.
+Here is an excerpt from Amy Briggs recalling her years at Infocom:
+"""
+    prompt += load_itw_redux()
+
+    prompt += """
+While reading the following moment from the game, your response may attend to
+any aspect of Amy Briggs’s testimony that feels relevant in this moment:
+a memory of daily work, the group dynamics at Infocom, informal mentoring practices, 
+commercial pressures, the struggle to legitimize video games as a growth engine versus 
+business software (such as Cornerstone), and her personal desire to write novels, 
+or technical detail, whatever seems relevant...
+Answer in TWO sentences, in neutral French, plain text, NO MARKDOWN, as a fleeting inner association.
+"""
+    prompt += prev_output + "\nYour next move will be : " + cmd
     return prompt
+
+
 
 # Official Amiga solution
 plundered_hearts_commands = [
@@ -400,24 +601,6 @@ plundered_hearts_commands = [
     "look at nicholas", "push nicholas", "nicholas, yes", "take pistol", "load pistol",
     "fire pistol at crulley"
 ]
-
-# Wikipedia article about Plundered Hearts
-plundered_hearts_wiki = """Plundered Hearts is an interactive fiction video game created by Amy Briggs and published by Infocom in 1987. Infocom's only game in the romance genre, it was released simultaneously for the Apple II, Commodore 64, Atari 8-bit computers, Atari ST, Amiga, Mac, and MS-DOS. It is Infocom's 28th game.
-Plundered Hearts casts the player in a well-defined role. The lead character is a young woman in the late 17th century who has received a letter. Jean Lafond, the governor of the small West Indies island of St. Sinistra, says that the player's father has contracted a wasting tropical disease. Lafond suggests that his recovery would be greatly helped by the loving presence of his daughter, and sends his ship (the Lafond Deux) to transport her.
-As the game begins, the ship is attacked by pirates and the player's character is kidnapped. Eventually, the player's character finds that two men are striving for her affections: dashing pirate Nicholas Jamison, and the conniving Jean Lafond. As the intrigue plays out, the lady does not sit idly by and watch the men duel over her; she must help Jamison overcome the evil plans of Lafond so that they have a chance to live happily ever after.
-As early as 1984, Infocom employees joked about the possibility of a romance text adventure. By 1987, the year of Plundered Hearts's release, Infocom no longer rated its games on difficulty level.
-Although this was not the only Infocom game designed in an effort to attract female players (one example being Moonmist), it is the only game where the lead character is always female.
-The Plundered Hearts package included an elegant velvet reticule (pouch) containing the following items:
-- A 50 guinea banknote from St. Sinistra
-- A letter from Jean Lafond reporting the illness of the player character's father
-Game reviewers complimented Plundered Hearts for its gripping prose, challenging predicaments, and scenes of derring-do. Other publications said it was a good introduction to interactive fiction, with writing suitable for both men and women. Some noted that the genre might have alienated Infocom's typical audience, but praised its bold direction nonetheless.
-"""
-
-plundered_hearts_fandom = """
-You play Lady Dimsford, a young, aristocratic woman in the 17th century. She receives a letter from Jean Lafond, the governor of an island in the West Indies, informing her that her father is dying of a tropical disease. Lafond sends a ship to bring her to his island. The ship is then intercepted by notorious pirate Captain Jamison. However, it turns out that Lafond has kidnapped Lady Dimsford's father for his own purposes. The Lady and the pirate work together to defeat him.
-The game can be played to completion with four potential endings. However, in only one ending do all of the Lady's loved ones survive. If another ending is arrived at, the user is informed that "There are other, perhaps more satisfying, conclusions."
-There was a divide within Infocom regarding whether interactive fiction protagonists should be "audience stand-ins", or whether they should have defined characters. For instance, after negative reaction to the anti-hero protagonist of Infidel, implementor Michael Berlyn concluded that "People really don’t want to know who they are [in a game]." Plundered Hearts falls on the opposite side of the spectrum. Lady Dimsford's capable and spunky personality subverts the game's "damsel in distress" setup.
-"""
 
 cmd_replace_dict = {
     "E": "EAST",
@@ -472,10 +655,17 @@ if ENABLE_C64_RENDERER:
 _godot_viewer_process = _start_godot_viewer()
 
 prev_output = ""
+prev_outputs = []
 cmd_index = 0
 prev_cmd = None
 pending_intro_ack = True
 last_cleaned = ""
+raw_output_map = load_raw_output(RAW_OUTPUT_PATH) if ENABLE_RAW_OUTPUT else {}
+video_embeddings = load_video_embeddings(VIDEO_EMBEDDINGS_PATH) if ENABLE_LLM else []
+recent_videos = []
+last_video_played = None
+pending_video_entry = None
+next_allowed_video_time = 0.0
 
 # Unified loop for reading, displaying, and responding.
 while True:  # for step, cmd in enumerate(plundered_hearts_commands):
@@ -526,7 +716,10 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                 renderer.render_frame()
         print(cleaned)
         if cleaned:
-            prev_output = cleaned
+            prev_outputs.append(cleaned)
+            if len(prev_outputs) > 3:
+                prev_outputs = prev_outputs[-3:]
+            prev_output = "\n".join(prev_outputs)
 
     if pending_intro_ack and ("Press RETURN or ENTER to begin" in raw_output or not raw_output):
         child.sendline("")
@@ -535,7 +728,12 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
 
     # Only proceed if the game shows a prompt and we still have commands to send.
     if ">" in raw_output and cmd_index < len(plundered_hearts_commands):
-        cmd = enhance_game_command(plundered_hearts_commands[cmd_index])
+        cmd = enhance_game_command(plundered_hearts_commands[cmd_index]) # Sanitize game command (remove the game's shortcuts)
+
+        if ENABLE_RAW_OUTPUT and prev_output:
+            if update_raw_output(raw_output_map, prev_output + "\nYour next move will be : " + cmd):
+                write_raw_output(RAW_OUTPUT_PATH, raw_output_map)
+            prev_output = ""
 
         if ENABLE_LLM:
             prompt = build_prompt(prev_output, cmd)
@@ -567,6 +765,17 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                 if status_text:
                     renderer.set_status_bar(status_text)
                 renderer.render_frame()
+            next_video = None
+            next_video_entry = None
+            if llm_commentary and video_embeddings:
+                comment_vector, comment_norm = embed_commentary_text(llm_commentary)
+                next_video_entry = select_best_video(
+                    comment_vector,
+                    comment_norm,
+                    video_embeddings,
+                    recent_videos,
+                    last_video_played,
+                )
             ai_thinking = llm_commentary + "\n"
             print("<AI thinks : '" + ai_thinking + "'>\n")
             if renderer and llm_commentary:
@@ -595,16 +804,16 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
                     beep=False,
                     word_mode=True,
                 )
-        elif ENABLE_EMBED:
-            embeddings = load_embeddings(EMBED_OUT_PATH)
-            while len(embeddings) <= cmd_index:
-                embeddings.append(None)
-            embeddings[cmd_index] = {
-                "cleaned": embed_text(last_cleaned),
-                "cmd": embed_text(cmd),
-            }
-            write_embeddings(EMBED_OUT_PATH, embeddings)
-
+            if next_video_entry:
+                pending_video_entry = next_video_entry
+            pending_video_entry, next_allowed_video_time, last_video_played = maybe_emit_video_request(
+                renderer,
+                pending_video_entry,
+                recent_videos,
+                last_video_played,
+                next_allowed_video_time,
+                len(video_embeddings),
+            )
         display_cmd = ">> " + cmd.strip()
         print(display_cmd + "\n")
         if renderer:
@@ -612,6 +821,15 @@ while True:  # for step, cmd in enumerate(plundered_hearts_commands):
         child.sendline(" " + cmd)
         prev_cmd = cmd
         cmd_index += 1
+
+    pending_video_entry, next_allowed_video_time, last_video_played = maybe_emit_video_request(
+        renderer,
+        pending_video_entry,
+        recent_videos,
+        last_video_played,
+        next_allowed_video_time,
+        len(video_embeddings),
+    )
 
     if cmd_index >= len(plundered_hearts_commands):
         break
