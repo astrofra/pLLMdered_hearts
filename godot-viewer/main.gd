@@ -312,6 +312,7 @@ func _play_video(path: String, is_noise: bool) -> void:
 	current_video_path = path
 	current_is_noise = is_noise
 	video_player.stream = stream
+	video_player.loop = false
 	video_player.play()
 	current_subtitle_index = -1
 	if is_noise:
@@ -349,6 +350,13 @@ func _on_video_finished() -> void:
 			var next_path = pending_next_video
 			pending_next_video = ""
 			_play_video(next_path, false)
+			return
+		if not video_queue.is_empty():
+			var queued = video_queue.pop_front()
+			_play_video(queued, false)
+			return
+		if current_video_path != "":
+			_play_video(current_video_path, true)
 		return
 	if video_queue.is_empty():
 		return
