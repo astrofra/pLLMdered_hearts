@@ -10,6 +10,7 @@ import sys
 import ollama
 
 DEFAULT_MODEL = "embeddinggemma:300m" # "qwen3-embedding"
+DEFAULT_TITLE_MODEL = "ministral-3:14b"
 DEFAULT_INPUT_DIR = os.path.join("godot-viewer", "video")
 DEFAULT_OUTPUT_PATH = os.path.join("assets", "abriggs-itw-embeddings.json")
 
@@ -60,7 +61,20 @@ def list_text_files(input_dir):
     return sorted(entries)
 
 
-def embed_files(paths, model):
+def build_title(text, model):
+    prompt = (
+        "Write a short, descriptive archive tape label for this transcript. "
+        "Use title case, no quotes, 3-8 words.\n\n"
+        f"Transcript:\n{text}"
+    )
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return (response.message.content or "").strip()
+
+
+def embed_files(paths, model, title_model):
     results = []
     total = len(paths)
     for idx, path in enumerate(paths, start=1):
@@ -69,6 +83,7 @@ def embed_files(paths, model):
             print(f"Skipping empty text: {path}")
             continue
         response = ollama.embeddings(model=model, prompt=text)
+        sequence_title = build_title(text, title_model)
         filename = os.path.basename(path)
         if filename.lower().endswith(".txt"):
             filename = filename[:-4] + ".ogv"
@@ -76,6 +91,7 @@ def embed_files(paths, model):
             {
                 "filename": filename,
                 "embedding": response.get("embedding"),
+                "sequence_title": sequence_title,
             }
         )
         print(f"Embedded {idx}/{total}: {os.path.basename(path)}")
@@ -98,7 +114,13 @@ def main():
         default=DEFAULT_OUTPUT_PATH,
         help="Output JSON path",
     )
-    parser.add_argument("-m", "--model", default=DEFAULT_MODEL, help="Ollama model")
+    parser.add_argument("-m", "--model", default=DEFAULT_MODEL, help="Ollama embedding model")
+    parser.add_argument(
+        "-t",
+        "--title-model",
+        default=DEFAULT_TITLE_MODEL,
+        help="Ollama model for sequence titles",
+    )
     args = parser.parse_args()
 
     files = list_text_files(args.input_dir)
@@ -106,7 +128,7 @@ def main():
         print(f"No .txt files found in {args.input_dir}", file=sys.stderr)
         return 1
 
-    results = embed_files(files, args.model)
+    results = embed_files(files, args.model, args.title_model)
     if not results:
         print("No embeddings generated.", file=sys.stderr)
         return 1
