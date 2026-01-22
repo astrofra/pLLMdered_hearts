@@ -15,23 +15,20 @@ mais je ne savais pas à quel point.
 Euh, je n'ai pas continué à travailler dans l'industrie du jeu,
 
 0:00:17.840,0:00:23.440
-donc je ne sais pas vraiment en quoi c'était différent
-de la façon dont les jeux sont faits aujourd'hui.
-Voilà tout ce que je peux dire. Euh,
+donc je ne sais pas en quoi c'était différent par rapport
+aux jeux d'aujourd'hui. Voilà tout ce que je peux dire. Euh,
 
 0:00:23.440,0:00:30.720
-de mon point de vue, je faisais partie des testeurs,
-et nous étions proches des Imps,
-et je ne sais pas comment c'était,
+de mon point de vue, j'étais chez les testeurs, nous faisions
+partie des Imps, et je ne sais pas comment c'était,
 
 0:00:30.720,0:00:35.760
 par exemple, de travailler au marketing,
 ou dans une autre partie de la même entreprise.
 
 0:00:35.760,0:00:41.440
-Je ne peux pas vraiment parler de cette expérience.
-Donc oui, il y avait parfois un appel disant :
-« On va recruter un Imp. »
+Je ne peux pas vraiment en parler. Donc oui, il y avait parfois
+une allusion : « On va recruter un Imp. »
 
 0:00:41.440,0:00:44.880
 Mais je ne sais pas si seuls quelques-uns d'entre nous
@@ -46,9 +43,8 @@ Je ne savais pas vraiment ce qui se passait
 pour les autres, et j'ai appris plus tard
 
 0:00:53.600,0:00:58.800
-qu'il existait apparemment ce sentiment que nous,
-les Imps, formions un groupe très fermé,
-le plus fermé des cercles,
+qu'il avait ce sentiment que nous, les Imps, formions
+un groupe très fermé, le plus fermé des cercles,
 
 0:00:58.800,0:01:04.800
 et que les testeurs se trouvaient en périphérie,
@@ -81,18 +77,16 @@ et après ce recrutement,
 avec toutes les coupes budgétaires,
 
 0:01:42.400,0:01:46.800
-il n'y en aura probablement pas d'autre
+il n'y aura pas d'autre recrutement
 avant que l'un d'entre nous ne meure.
 Donc si tu veux tenter ta chance,
 
 0:01:46.800,0:01:51.520
-c'est maintenant ou jamais. »
-Alors j'ai dit :
+c'est maintenant ou jamais. » Alors j'ai dit :
 « D'accord… et qu'est-ce que je dois faire ? »
 
 0:01:51.520,0:01:57.360
-Il m'a répondu :
-« Eh bien, tu devrais écrire un jeu. »
+Il m'a répondu : « Tu devrais écrire un jeu. »
 Alors j'ai écrit un jeu et j'ai postulé.
 Je crois que d'autres personnes 
 
@@ -121,29 +115,28 @@ qu'il n'y a pas d'histoire complète,
 pas d'expérience achevée, 
 
 0:02:29.440,0:02:34.960
-on a une bien meilleure idée, 
-tout en restant extérieur,
+on a une bien meilleure idée, tout en restant extérieur,
+de ce que signifie vraiment
 
 0:02:34.960,0:02:39.840
-de ce que signifie vraiment créer un jeu. C'est donc une
-étape suivante assez logique que d'essayer
-de le faire soi-même. Et Steve m'a aidée.
+ créer un jeu. C'est donc l'étape suivante la plus logique
+que d'essayer de le faire soi-même. Et Steve m'a aidée.
 
 0:02:39.840,0:02:45.600
 C'est lui qui m'a expliqué comment travailler
 avec l'interpréteur, comment…
 
 0:02:45.600,0:02:49.920
-je ne trouve plus les mots,
+je ne trouve plus les mots !
 comment compiler le jeu, toutes les étapes 
 
 0:02:49.920,0:02:55.520
-côté ordinateur. J'avais déjà un peu d'expérience en programmation,
+côté ordinateur. J'avais un peu d'expérience en code,
 donc ce n'était pas totalement 
 
 0:02:55.520,0:03:03.120
-nouveau pour moi,
-mais je ne savais pas comment faire en ZIL.
+nouveau pour moi, mais je ne savais pas
+comment faire avec le langage ZIL.
 
 0:03:03.120,0:03:08.000
 Il ne m'a pas prise par la main, mais il m'a clairement montré
