@@ -1,7 +1,6 @@
 0:00:00.000,0:00:05.680
 J'ai commencé à Wheeler, et ils ont déménagé
-au bout de mon premier mois ou des deux premiers mois.
-Donc j'ai pu voir à la fois
+le mois suivant. Donc j'ai pu voir à la fois
 
 0:00:05.680,0:00:11.520
 la fin de l'ancien et le début du nouveau.
@@ -9,27 +8,23 @@ Et j'étais suffisamment nouvelle, arrivée à un moment
 
 0:00:11.520,0:00:16.480
 où tout était en pleine expansion, et où
-l'enthousiasme se cristallisait autour de Cornerstone
-et de l'idée que
+l'enthousiasme étair sur Cornerstone et comment
 
 0:00:16.480,0:00:20.080
-nous allions devenir une vraie entreprise,
-quelque chose de sérieux, de structuré,
-plus question de ces histoires de jeux.
+nous allions devenir une vraie entreprise, sérieuse,
+structurée, plus question de ces histoires de jeux.
 
 0:00:20.080,0:00:25.760
 Et je me suis laissée emporter par ça,
 même si j'avais été embauchée du côté des jeux. Euh,
 
 0:00:25.760,0:00:32.000
-j'étais donc tout à fait partante pour le déménagement,
-pour ce nouveau bâtiment très moderne,
-avec du verre, des atriums, et tout ça.
+j'étais donc partante pour le déménagement, pour ce nouveau
+bâtiment très moderne, avec du verre, des atriums...
 
 0:00:32.000,0:00:41.520
-C'était, je suppose, une expérience intéressante —
-pas tant une perte d'innocence,
-mais plutôt le fait de comprendre,
+C'était, je crois, une expérience intéressante —
+pas tant une perte d'innocence, mais le fait de comprendre,
 
 0:00:41.520,0:00:46.720
 en regardant en arrière, quelles erreurs étaient en train
@@ -45,5 +40,4 @@ une très mauvaise idée pour Infocom.
 
 0:00:56.880,0:01:01.680
 Et puis, bien sûr, je suis devenue Imp.
-Je me suis donc retrouvée beaucoup plus
-du côté des jeux.
+Je me suis donc retrouvée du côté des jeux.
