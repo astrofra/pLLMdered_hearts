@@ -39,7 +39,7 @@ when what you really only care about is, you 
 know, the the magic pen that's in the pencil cup.
 
 0:00:54.880,0:01:02.720
-Um whereas if you say you walk into a wizard's 
+Um, whereas if you say you walk into a wizard's 
 uh lab or a wizard's cave, who knows what's in
 
 0:01:02.720,0:01:08.800
@@ -48,7 +48,7 @@ by setting it in this fantasy at uh environment
 
 0:01:08.800,0:01:15.680
 that people don't have predetermined expectations 
-about what should be in that environment. Um and
+about what should be in that environment. Um, and
 
 0:01:15.680,0:01:21.200
 and so I think that's some of what you're 
@@ -80,7 +80,7 @@ I'm still embarrassed to this day in the final
 
 0:01:56.480,0:02:01.520
 released version there's a bug that happens in 
-the first couple moves u when you do something
+the first couple moves, when you do something
 
 0:02:01.520,0:02:05.120
 very logical and I can't remember what it is 
