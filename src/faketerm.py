@@ -18,9 +18,9 @@ from knowledge_base import plundered_hearts_wiki, plundered_hearts_fandom
 
 # os.environ["OLLAMA_NO_CUDA"] = "1"
 
-AI_THINKING_STATUS = "<MISTRAL IS THINKING>"
-AI_COMMENT_LABEL = "MISTRAL SAYS:"
-AI_VIDEO_LABEL = "NEXT UP, PLAYING TAPE:"
+AI_THINKING_STATUS = "<MISTRAL REFLECHIT>"
+AI_COMMENT_LABEL = "MISTRAL COMMENTE:"
+AI_VIDEO_LABEL = "MAGNETO, JOUE LA BANDE:"
 AI_COMMENT_FG = (255, 255, 255)
 AI_COMMENT_BG = (0, 0, 0)
 LLM_MODEL = 'ministral-3:14b' # 'ministral-3:8b' # 'qwen2.5:7b' # 'ministral-3:14b'
@@ -85,6 +85,8 @@ def sanitize_renderer_text(text):
     if text is None:
         return ""
     placeholder = "__RSQ__"
+    text = text.replace("\u2019", "'")
+    text = text.replace("\u2018", "'")
     text = text.replace("'", placeholder)
     normalized = unicodedata.normalize("NFKD", text)
     ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
