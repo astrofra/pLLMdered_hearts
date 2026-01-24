@@ -35,3 +35,7 @@ Deux recits se croisent : Lady Dimsford dans le jeu, et Amy Briggs dans son temo
 - `llm_out/` est l'interface entre les processus (ne pas y ecrire a la main).
 - Le walkthrough est fixe; le LLM ne change pas le gameplay.
 - Les videos sont choisies par similarite semantique, pas par ordre chronologique.
+
+## Credits
+
+- Amy Briggs interview [by Jason Scott and the "Get Lamp" team](https://archive.org/details/getlamp-interviews?tab=about), licensed Creative Commons Attribution ShareAlike.
